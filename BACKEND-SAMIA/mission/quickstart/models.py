@@ -1,3 +1,4 @@
+from multiprocessing.dummy import Process
 from typing import Type
 from django.db import models
 from django.conf import settings
@@ -262,6 +263,7 @@ class Paiement(models.Model):
     date_reception = models.DateField(blank=True,null=True)
     montant = models.IntegerField()
     id_envoye_id= models.ForeignKey(Envoye,default=1,on_delete=models.CASCADE)
+    
 
 
 class Justifs(models.Model):
@@ -284,5 +286,66 @@ class Actions(models.Model):
     libelle_action = models.CharField(max_length=255)
     id_mission_id = models.ForeignKey(Mission, on_delete=models.CASCADE)
     id_user_id = models.ForeignKey(settings.AUTH_USER_MODEL,related_name='user_id',on_delete=models.CASCADE)
+
+class Config_rapport(models.Model):
+    express = (
+        ('ET','AND'),
+        ('OU','OR'),       
+        
+        
+    )
+    act = (
+        ('C','Chef de mission'),
+        ('T','tout le monde'),       
+        
+        
+    )
+    id_config_rapport = models.AutoField(primary_key=True)
+    id_process_id= models.ForeignKey(Processus,on_delete=models.RESTRICT)
+    expression = models.CharField(max_length=10, choices= express)
+    acteur = models.CharField(max_length=10, choices= act)
+
+
+class Rapport_droit(models.Model):
+    id_rapport_droit = models.AutoField(primary_key=True)
+    id_config_rapport = models.ForeignKey(Config_rapport, on_delete=models.CASCADE)
+    validation_rapport=models.ForeignKey(Group,related_name='validation_rapport', on_delete=models.RESTRICT)
+    consultation_rapport=models.ForeignKey(Group,related_name='consultation_rapport', on_delete=models.RESTRICT)
+    suppression_rapport=models.ForeignKey(Group,related_name='suppression_rapport', on_delete=models.RESTRICT)
+
+class Rapport(models.Model):
+    id_rapport= models.AutoField(primary_key=True)
+    resultats_attendu = models.CharField(max_length=500)
+    recommendations = models.CharField(max_length=500)
+    date_creation =models.DateField()
+    id_createur = models.ForeignKey(settings.AUTH_USER_MODEL,related_name='id_createur',on_delete=models.CASCADE)
+    date_derniere_modification =models.DateField()
+    validation=models.DateField(blank=True,null=True)
+    id_validateur = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,related_name='id_validateur',on_delete=models.CASCADE)
+    id_envoye1 = models.ForeignKey(Envoye,default=1,related_name='env', on_delete=models.CASCADE)
+    fichier =models.FileField(upload_to='rapport')
+
+class Config_blocage(models.Model):
+    id_config_blocage= models.AutoField(primary_key=True)
+    id_process_id = models.ForeignKey(Processus, on_delete=models.CASCADE)
+    step_debut = models.ForeignKey(Stepprocess,related_name='sep_debut', on_delete=models.CASCADE)
+    step_fin = models.ForeignKey(Stepprocess,related_name='sep_fin', on_delete=models.CASCADE)
+
+class Bloque(models.Model):
+    id_bloque= models.AutoField(primary_key=True)
+    id_envoye_id = models.ForeignKey(Envoye,related_name='envoye1', on_delete=models.CASCADE)
+    step_process = models.ForeignKey(Typesteps,related_name='process1', on_delete=models.CASCADE)
+
+class Fiches(models.Model):
+    id_fiches= models.AutoField(primary_key=True)
+    id_process_id = models.ForeignKey(Processus, on_delete=models.CASCADE)
+    fiche_de_mission = models.ForeignKey(Stepprocess,related_name='fiche_de_mission', on_delete=models.CASCADE)
+    ordre_de_mission = models.ForeignKey(Stepprocess,related_name='ordre_de_mission', on_delete=models.CASCADE)
+
+
+    
+
+
+
 
 

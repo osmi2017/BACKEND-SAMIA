@@ -178,3 +178,5 @@ EMAIL_HOST = 'smtp.office365.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'support.appinov@snedai.com'
 EMAIL_HOST_PASSWORD = '2018@@Appin@v'
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100000000

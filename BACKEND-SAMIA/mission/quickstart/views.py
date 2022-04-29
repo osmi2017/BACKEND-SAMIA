@@ -1,12 +1,12 @@
 from logging import raiseExceptions
 from django.contrib.auth.models import User, Group
-
-
-from quickstart.models import Employe, Envoye,Regime,Bank,Justifs,Cheque,Mission,Employe, Service,Stepprocess,Processus,Pole,Entite,TypeProjet,Projet,Country,Worldcities,Categorie, Bareme, Bareme_detail, Montant_zone,Notifications,Typesteps,Zone,Paiement
+import io
+#from reportlab.pdfgen import canvas
+from quickstart.models import Employe,Config_blocage,Rapport, Envoye,Regime,Bank,Justifs,Cheque,Mission,Employe,Config_rapport, Service,Stepprocess,Processus,Pole,Entite,TypeProjet,Projet,Country,Worldcities,Categorie, Bareme, Bareme_detail, Montant_zone,Notifications,Typesteps,Zone,Paiement,Bloque
 from rest_framework import viewsets
 from rest_framework import permissions
-from quickstart.serializers import UserSerializer,TypestepsSerializer,JustifsSerializer,ChequeSerializer,PaiementSerializer,BankSerializer,ServiceSerializer,Montant_zoneSerializer,EnvoyeSerializer,BaremeSerializer,Bareme_detailSerializer, GroupSerializer,MissiontSerializer,RegimeSerializer,ProcessusSerializer,StepprocessSerializer,User1Serializer,EmployeSerializer,PoleSerializer,TypeProjetSerializer,EntiteSerializer,ProjetSerializer,CountrySerializer,WorldcitiesSerializer, CategorieSerializer, Bareme_envoyeSerializer, NotificationSerializer,ZoneSerializer
-from django.http import HttpResponse, JsonResponse
+from quickstart.serializers import UserSerializer,TypestepsSerializer,RapportSerializer,Config_blocageSerializer,Config_rapportSerializer,BloqueSerializer,JustifsSerializer,ChequeSerializer,PaiementSerializer,BankSerializer,ServiceSerializer,Montant_zoneSerializer,EnvoyeSerializer,BaremeSerializer,Bareme_detailSerializer, GroupSerializer,MissiontSerializer,RegimeSerializer,ProcessusSerializer,StepprocessSerializer,User1Serializer,EmployeSerializer,PoleSerializer,TypeProjetSerializer,EntiteSerializer,ProjetSerializer,CountrySerializer,WorldcitiesSerializer, CategorieSerializer, Bareme_envoyeSerializer, NotificationSerializer,ZoneSerializer
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
@@ -32,6 +32,34 @@ from django.db.models import Count
 
 
 from django.contrib.auth.models import Permission
+
+def is_config_blocage(envo):
+    envoye= Envoye.objects.filter(id_envoye=envo).values('id_mission','id_employe')
+    mission=Mission.objects.filter(id_mission=int(envoye[0]['id_mission'])).values('type_processus','current_step')
+    config_blocage=Config_blocage.objects.filter(id_process_id=int(mission[0]['type_processus'])).values('step_debut')
+    if int(mission[0]['current_step'])>int(config_blocage[0]['step_debut']):
+        obj = Employe.objects.get(id_employe=int(envoye[0]['id_employe']))
+                
+        obj.verrou_employe = True
+        
+        obj.save()
+    bloque= Bloque.objects.filter(id_envoye_id=envo).exclude(step_process=10).exists()
+    if not bloque:
+       step_process= Stepprocess.objects.filter(order_steps=config_blocage[0]['step_fin']).values('')
+       data={}
+       data['id_envoye_id']=envo
+       data['step_process']=step_process[0]['type_steps']
+       serializer = BloqueSerializer(data=data)
+        
+       if serializer.is_valid():
+            
+            serializer.save()
+
+def mission_to_envoye(mission):
+    envoye= Envoye.objects.filter(id_mission=int(mission)).values()
+    for env in envoye:
+        is_config_blocage(env['id_envoye'])
+
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -207,10 +235,10 @@ class MesMissionList(APIView):
 
                             role = 'chef de delegation'
                     data2={}
-                    #print(id_mision)
+                    print(id_mision)
                     data2['id_mission']= id_mision.id_mission
-                    #print('id')
-                    #print(data2['id_mission'])
+                    print('kjkjkjkj')
+                    print(data2['id_mission'])
                     data2['id_employe']=emp[0]['id_employe']
                     data2['nom_employe']=emp[0]['nom_employe']
                     data2['prenom_employe']=emp[0]['prenoms_employe']
@@ -223,7 +251,7 @@ class MesMissionList(APIView):
                 #print(data2)
                 serializer1 = EnvoyeSerializer(data=data2)
                 if serializer1.is_valid():
-                    #print(serializer1)
+                    print(serializer1)
                     serializer1.save()
                     
                     try:
@@ -339,6 +367,24 @@ class MesMissionList(APIView):
                     return Response(serializer3.errors, status=status.HTTP_400_BAD_REQUEST)
             request_finished.connect(send_mail_mission)
             print('s<eet')
+            Config_rappor= Config_rapport.objects.filter(id_process_id=int(data1['type_processus'])).values('expression','acteur')
+            print(Config_rappor)
+            if Config_rappor[0]['expression']=='ET':
+                id_missio = Mission.objects.latest('id_mission')
+                envoye= Envoye.objects.filter(id_mission=id_missio).values('id_envoye')
+                for x in range(0,len(envoye)):
+                    data5={}
+                    data5['id_envoye_id']=envoye[x]['id_envoye']
+                    data5['step_process']=10
+                    serializer5 = BloqueSerializer(data=data5)
+                    print(serializer5)
+                    if serializer5.is_valid():
+                        print('ok')
+                        serializer5.save()
+                    else:
+                        print(serializer5.errors)
+            
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -425,6 +471,7 @@ class ProcessList(generics.ListCreateAPIView):
    
     queryset = Processus.objects.all()
     serializer_class = ProcessusSerializer
+    paginator = None
 
     
 
@@ -451,7 +498,7 @@ class StepprocessList(generics.ListCreateAPIView):
     serializer_class = StepprocessSerializer
 
     def post(self, request):
-        
+        print('oklklklkl')
         print(request.data)
         data={}
         data['cible']=request.data['cible']
@@ -784,7 +831,7 @@ class Validations(APIView):
     """
     #permission_classes = [permissions.IsAuthenticated]
     def get(self, request, id=id,format=None):
-        
+       
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def post(self, request, format=None):
@@ -891,6 +938,7 @@ class Validations(APIView):
                         print(serializer3)
                         serializer3.save()
                         request_finished.connect(send_mail_mission)
+                        mission_to_envoye(int(idmission))
                         return Response("Validez avec succès",status=status.HTTP_201_CREATED)
                         
                 else:
@@ -916,7 +964,7 @@ class Billets(APIView):
         print(request.data)
         try:
             id_envoye= request.data['id_envoye']
-            
+            is_config_blocage(int(id_envoye))
             envoyem=Envoye.objects.filter(id_envoye=int(id_envoye[0])).values('id_mission_id')
             idmission = envoyem[0]['id_mission_id']
             id_user = request.data['id_user']
@@ -1072,6 +1120,7 @@ class forfait(APIView):
                     print(serializer3)
                     serializer3.save()
                     request_finished.connect(send_mail_mission)
+                    mission_to_envoye(int(idmission))
                     return Response(status=status.HTTP_201_CREATED)
                     
             else:
@@ -1094,6 +1143,7 @@ class NumeroDetail(APIView):
         stepprocess= Stepprocess.objects.filter(order_steps=int(currentstep)+2,id_process_id=int(type_processus)).values('type_steps_id')
         typesteps=  Typesteps.objects.filter(id_typesteps=stepprocess[0]['type_steps_id']).values('nom_typesteps')
         query3 = query1.update(numero_mission=request.data['id_mission'],current_step=int(currentstep)+1,relance_cible=str(typesteps[0]['nom_typesteps'])) 
+        mission_to_envoye(int(request.data['id_mission']))
         return Response("Numéro attribué", status=status.HTTP_202_ACCEPTED)
     
 
@@ -1135,6 +1185,7 @@ class paiement(APIView):
                 serializer.save()
                 data2= Envoye.objects.filter(id_mission_id=request.data['id_mission'])
                 serializer2 = EnvoyeSerializer(data2,context={'request': request}, many=True)
+                is_config_blocage(int(request.data['id_envoye']))
                 return Response(serializer2.data, status=status.HTTP_201_CREATED)
             else:
                 print(serializer.errors)
@@ -1315,6 +1366,86 @@ class Finalisation(APIView):
     def post(self,request):
         id_mission= request.data['id_mission']
         return Response( "Hipipip Houra", status=status.HTTP_206_PARTIAL_CONTENT)
+
+class Config_blocageList(generics.ListCreateAPIView):
+     queryset = Config_blocage.objects.all()
+     serializer_class = Config_blocageSerializer
+     
+
+class Config_blocageDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset =Config_blocage.objects.all()
+    serializer_class =  Config_blocageSerializer
+
+class RapportList(generics.ListCreateAPIView):
+     queryset = Rapport.objects.all()
+     serializer_class = RapportSerializer
+
+     def post(self,request,format=None):
+         print(request.data)
+         data={}
+         data['fichier']= request.data['fichier']
+         data['resultats_attendu']= request.data['resultats_attendu']
+         data['recommendations']= request.data['recommendations']
+         data['date_creation']= date.today()
+         data['id_createur']= request.data['id_createur']
+         data['date_derniere_modification']= date.today()
+         #data['id_modificateur']= request.data['id_modificateur']
+         #data['validation']= request.data['validation']
+         #data['id_validateur']= request.data['id_validateur']
+         data['id_envoye1']= request.data['id_envoye1']
+         serializers= RapportSerializer(data=data)
+         if serializers.is_valid():
+            
+            serializers.save()
+            return Response(serializers.data, status=status.HTTP_201_CREATED) 
+         print(serializers.errors)
+         return Response( serializers.errors, status=status.HTTP_400_BAD_REQUEST )
+         
+
+class RapportDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset =Rapport.objects.all()
+    serializer_class =  RapportSerializer
+
+class Config_rapportList(generics.ListCreateAPIView):
+     queryset = Config_rapport.objects.all()
+     serializer_class = Config_rapportSerializer
+     
+
+class Config_rapportDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset =Config_rapport.objects.all()
+    serializer_class =  Config_rapportSerializer
+
+class Contrainte(APIView):
+    def get(self,request,id_process):
+        stepproces= Stepprocess.objects.filter(id_process_id=id_process).order_by('order_steps').values()
+        lsstepproces={}
+        ls=[]
+        i=0
+        val=''
+        print(stepproces)
+        for step in stepproces:
+            lsstepproces=dict(lsstepproces)
+            typest= Typesteps.objects.filter(id_typesteps=step['type_steps_id']).values()
+            group = Group.objects.filter(pk=step['cible_id']).values()
+            #lsstepproces[typest['id_typesteps']]=typest['nom_typesteps']
+            if typest[0]['nom_typesteps']== 'validation':
+                val=" "+str(group[0]['name'])
+            else:
+                val=''
+            lsstepproces['id_stepprocess']=step['id_stepprocess']
+            lsstepproces['nom_typesteps']= str(typest[0]['nom_typesteps'])+val
+            ls.append(lsstepproces)
+            i=i+1
+            print(lsstepproces)
+            
+        return Response(ls)
+
+
+class fiche_mission(APIView):
+    def post(self,request):
+        return Response("ok")
+
+
 
 
 

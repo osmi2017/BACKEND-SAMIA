@@ -1,6 +1,7 @@
+from turtle import circle
 from django.contrib.auth.models import User, Group,Permission
 from rest_framework import serializers
-from quickstart.models import Typesteps,Mission,Envoye,Regime,Bank,Cheque,Justifs,Paiement,Actions,Service, Employe,Montant_zone,Bareme,Bareme_detail,Processus,Stepprocess,Pole,Entite,TypeProjet,Projet, Country, Worldcities, Categorie, Bareme_envoye,Notifications,Zone, Bareme_envoye
+from quickstart.models import Typesteps,Mission,Envoye,Regime,Config_blocage,Config_rapport,Rapport,Bloque,Bank,Cheque,Justifs,Paiement,Actions,Service, Employe,Montant_zone,Bareme,Bareme_detail,Processus,Stepprocess,Pole,Entite,TypeProjet,Projet, Country, Worldcities, Categorie, Bareme_envoye,Notifications,Zone, Bareme_envoye
 from django.db import models
 import ast
 from django.conf import settings
@@ -31,6 +32,7 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     userid= serializers.SerializerMethodField()
     justif = serializers.SerializerMethodField()
     Montant = serializers.SerializerMethodField()
+    rapport = serializers.SerializerMethodField()
     def get_justif(self, obj):
         justif = Justifs.objects.filter(id_envoye_id_id  = obj.id_envoye).exists()
         if justif:
@@ -125,13 +127,26 @@ class EnvoyeSerializer(serializers.ModelSerializer):
         montant1['rest_a_justifier']=montant-sold_des_justif
         montant1['sold_des_justif']=sold_des_justif
         return montant1
+
+    def get_rapport(self, obj):
+        rapp=False
+        mission = obj.id_mission.type_processus.id_process
+        
+        rapport= Config_rapport.objects.filter(id_process_id=mission).values()
+        if rapport[0]['acteur']=="C" and obj.role=="chef de delegation":
+            rapp= True
+        elif rapport[0]['acteur']=="T":
+            rapp= True
+    
+
+        return rapp
     
     
     class Meta:
         model = Envoye
-        fields = ['id_envoye', 'id_mission_id','userid', 'id_employe','nom_employe','prenom_employe','role','billet_avion','statut_des_justifs','hebergement','perdiem','total','Montant','Paye','Receptionner','justifier','validation_justier','url_photo','justif']
+        fields = ['id_envoye', 'id_mission','userid', 'id_employe','nom_employe','prenom_employe','role','billet_avion','statut_des_justifs','hebergement','perdiem','total','Montant','Paye','Receptionner','justifier','validation_justier','url_photo','justif','rapport']
 
-    
+        extra_kwargs = {'id_mission_id': {'read_only': False}}
 
 
 class StepprocessSerializer(serializers.ModelSerializer):
@@ -486,6 +501,47 @@ class JustifsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Justifs
         fields = ['id_justif','id_envoye_id','id_comptable','piece','url_piece','Type_piece','Libelle','Montant','commentaire']
+
+class BloqueSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Bloque
+        fields = ['id_bloque','id_envoye_id','step_process']
+
+
+class Config_blocageSerializer(serializers.ModelSerializer):
+    debut=serializers.SerializerMethodField()
+    fin=serializers.SerializerMethodField()
+
+    def get_debut(self, obj):
+        data={}
+        step= obj.step_debut.type_steps_id
+        stepproce = Typesteps.objects.filter(id_typesteps=step).values('id_typesteps','nom_typesteps')
+        grp= Group.objects.filter(pk=int(obj.step_debut.cible_id)).values('name')
+        data[obj.step_debut.id_stepprocess]=str(stepproce[0]['nom_typesteps'])+" du( de l'/ de la/ des) "+str(grp[0]['name'])
+      
+        return data
+    def get_fin(self, obj):
+        data={}
+        step= obj.step_fin.type_steps_id
+        stepproce = Typesteps.objects.filter(id_typesteps=step).values('id_typesteps','nom_typesteps')
+        grp= Group.objects.filter(pk=int(obj.step_fin.cible_id)).values('name')
+        data[obj.step_debut.id_stepprocess]=str(stepproce[0]['nom_typesteps'])+" du( de l'/ de la/ des) "+str(grp[0]['name'])
+        return data
+
+    class Meta:
+        model = Config_blocage
+        fields = ['id_config_blocage','id_process_id','step_debut','step_fin','debut','fin']
+
+class Config_rapportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Config_rapport
+        fields = ['id_config_rapport','expression','acteur','id_process_id']
+
+class RapportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Rapport
+        fields = ['fichier','id_rapport','resultats_attendu','recommendations','date_creation','id_createur','date_derniere_modification','validation','id_validateur','id_envoye1']
 
 
 
