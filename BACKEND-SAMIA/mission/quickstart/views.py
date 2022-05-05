@@ -1,6 +1,8 @@
 from logging import raiseExceptions
 from django.contrib.auth.models import User, Group
 import io
+from django.utils.datastructures import MultiValueDictKeyError
+
 #from reportlab.pdfgen import canvas
 from quickstart.models import Employe,Config_blocage,Rapport, Envoye,Regime,Bank,Justifs,Cheque,Mission,Employe,Config_rapport, Service,Stepprocess,Processus,Pole,Entite,TypeProjet,Projet,Country,Worldcities,Categorie, Bareme, Bareme_detail, Montant_zone,Notifications,Typesteps,Zone,Paiement,Bloque
 from rest_framework import viewsets
@@ -8,7 +10,7 @@ from rest_framework import permissions
 from quickstart.serializers import UserSerializer,TypestepsSerializer,RapportSerializer,Config_blocageSerializer,Config_rapportSerializer,BloqueSerializer,JustifsSerializer,ChequeSerializer,PaiementSerializer,BankSerializer,ServiceSerializer,Montant_zoneSerializer,EnvoyeSerializer,BaremeSerializer,Bareme_detailSerializer, GroupSerializer,MissiontSerializer,RegimeSerializer,ProcessusSerializer,StepprocessSerializer,User1Serializer,EmployeSerializer,PoleSerializer,TypeProjetSerializer,EntiteSerializer,ProjetSerializer,CountrySerializer,WorldcitiesSerializer, CategorieSerializer, Bareme_envoyeSerializer, NotificationSerializer,ZoneSerializer
 from django.http import HttpResponse, JsonResponse, FileResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import JSONParser,MultiPartParser, FormParser,FileUploadParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -28,6 +30,9 @@ import json
 import ast
 import traceback
 from django.db.models import Count
+from django.shortcuts import render
+from django.core.files import File
+from django.core.serializers.json import DjangoJSONEncoder
 
 
 
@@ -488,6 +493,24 @@ class ProcessG(generics.ListCreateAPIView):
         print(serializer)
         return Response(serializer.data)
 
+class Processus_step(APIView):
+    def get(self, request, id_process):
+        id=id_process
+        lst=[]
+        type_st={}
+        stepproces= Stepprocess.objects.filter(id_process_id=int(id)).values().order_by('order_steps')
+        print(stepproces)
+        for x in range(0, len(stepproces)):
+            type_st=dict(type_st)
+            tri=int(stepproces[x]['type_steps_id'])
+            type_step= Typesteps.objects.filter(id_typesteps=tri).values('nom_typesteps')
+            type_st['id']=stepproces[x]['cible_id']
+            group= Group.objects.filter(pk=int(stepproces[x]['cible_id'])).values()
+            type_st['nom']=str(type_step[0]['nom_typesteps'])+" ("+str(group[0]['name'])+")"
+            lst.append(type_st)
+
+        return Response(lst)
+
 
 class ProcessDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Processus.objects.all()
@@ -776,7 +799,7 @@ class GroupDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class =  GroupSerializer
 
 class TypestepsList(generics.ListCreateAPIView):
-     queryset = Typesteps.objects.all()
+     queryset = Typesteps.objects.all().exclude(id_typesteps=9).exclude(id_typesteps=10)
      serializer_class = TypestepsSerializer
      
 
@@ -1377,23 +1400,36 @@ class Config_blocageDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class =  Config_blocageSerializer
 
 class RapportList(generics.ListCreateAPIView):
+     """
+    A view that can accept POST requests with JSON content.
+    """
+     
      queryset = Rapport.objects.all()
      serializer_class = RapportSerializer
+     
+     def get(self, request,format=None):
+            Rapport1=Rapport.objects.all()
+            serializer = RapportSerializer(Rapport1,context={'request': request}, many=True) 
+            
+
+            return Response(serializer.data)
 
      def post(self,request,format=None):
          print(request.data)
          data={}
          data['fichier']= request.data['fichier']
-         data['resultats_attendu']= request.data['resultats_attendu']
-         data['recommendations']= request.data['recommendations']
+         data['resultats_attendu']= str(request.data['resultats_attendu'])
+         data['recommendations']= str(request.data['recommendations'])
          data['date_creation']= date.today()
          data['id_createur']= request.data['id_createur']
          data['date_derniere_modification']= date.today()
          #data['id_modificateur']= request.data['id_modificateur']
          #data['validation']= request.data['validation']
          #data['id_validateur']= request.data['id_validateur']
-         data['id_envoye1']= request.data['id_envoye1']
+         data['id_envoye1']= int(request.data['id_envoye1'])
+         
          serializers= RapportSerializer(data=data)
+         print(serializers)
          if serializers.is_valid():
             
             serializers.save()
@@ -1402,13 +1438,33 @@ class RapportList(generics.ListCreateAPIView):
          return Response( serializers.errors, status=status.HTTP_400_BAD_REQUEST )
          
 
-class RapportDetail(generics.RetrieveUpdateDestroyAPIView):
+class RapportDetail(APIView):
     queryset =Rapport.objects.all()
     serializer_class =  RapportSerializer
+
+    def put(self,request,pk):
+        id_validateur= request.data['id_validateur']
+        rapport = Rapport.objects.filter(id_rapport=pk)
+        rapport.update(id_validateur_id=id_validateur,date_derniere_modification=date.today(),validation=date.today())
+        rapport1 = Rapport.objects.filter(id_rapport=pk).values()
+         
+       
+        return Response( rapport1 , status=status.HTTP_200_OK)
+       
+
+
+        
+
+class rapport_envoyeDetail(APIView):
+    def get(self,request,id_envoye):
+        rapport= Rapport.objects.filter(id_envoye1_id=id_envoye).values()
+        return Response(rapport)
 
 class Config_rapportList(generics.ListCreateAPIView):
      queryset = Config_rapport.objects.all()
      serializer_class = Config_rapportSerializer
+
+
      
 
 class Config_rapportDetail(generics.RetrieveUpdateDestroyAPIView):

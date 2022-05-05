@@ -33,6 +33,7 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     justif = serializers.SerializerMethodField()
     Montant = serializers.SerializerMethodField()
     rapport = serializers.SerializerMethodField()
+    rapport_state = serializers.SerializerMethodField()
     def get_justif(self, obj):
         justif = Justifs.objects.filter(id_envoye_id_id  = obj.id_envoye).exists()
         if justif:
@@ -140,11 +141,27 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     
 
         return rapp
+
+    def get_rapport_state(self, obj):
+        sub= False
+        valid = False
+        rep={}
+        rapport = Rapport.objects.filter(id_envoye1_id=obj.id_envoye).exists()
+        if rapport:
+            rapp= Rapport.objects.filter(id_envoye1=obj.id_envoye).values()
+            sub= True
+            if rapp[0]['validation']!= None and rapp[0]['id_validateur_id']!= None:
+                valid= True
+        rep['Submitted']= sub
+        rep['Validated']= valid
+
+        return rep
+
     
     
     class Meta:
         model = Envoye
-        fields = ['id_envoye', 'id_mission','userid', 'id_employe','nom_employe','prenom_employe','role','billet_avion','statut_des_justifs','hebergement','perdiem','total','Montant','Paye','Receptionner','justifier','validation_justier','url_photo','justif','rapport']
+        fields = ['id_envoye', 'id_mission','userid', 'id_employe','nom_employe','prenom_employe','role','billet_avion','statut_des_justifs','hebergement','perdiem','total','Montant','Paye','Receptionner','justifier','validation_justier','url_photo','justif','rapport','rapport_state']
 
         extra_kwargs = {'id_mission_id': {'read_only': False}}
 
@@ -536,7 +553,7 @@ class Config_blocageSerializer(serializers.ModelSerializer):
 class Config_rapportSerializer(serializers.ModelSerializer):
     class Meta:
         model= Config_rapport
-        fields = ['id_config_rapport','expression','acteur','id_process_id']
+        fields = ['id_config_rapport','expression','acteur','id_process_id','Validateur']
 
 class RapportSerializer(serializers.ModelSerializer):
     class Meta:

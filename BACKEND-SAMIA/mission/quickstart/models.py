@@ -304,6 +304,7 @@ class Config_rapport(models.Model):
     id_process_id= models.ForeignKey(Processus,on_delete=models.RESTRICT)
     expression = models.CharField(max_length=10, choices= express)
     acteur = models.CharField(max_length=10, choices= act)
+    Validateur=models.ForeignKey(Group,blank=True,null=True, on_delete=models.RESTRICT)
 
 
 class Rapport_droit(models.Model):
