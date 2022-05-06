@@ -24,6 +24,7 @@ class Rights(models.Model):
             ("paiement", "peut faire un paiement"),
             ("justification", "peut valider des justificatifs"),
             ("traite_mission", "peut traiter des missions"),
+            ("valide_rapport", "peut valider les rapports"),
             
             
         )
@@ -325,6 +326,7 @@ class Rapport(models.Model):
     id_validateur = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,related_name='id_validateur',on_delete=models.CASCADE)
     id_envoye1 = models.ForeignKey(Envoye,default=1,related_name='env', on_delete=models.CASCADE)
     fichier =models.FileField(upload_to='rapport')
+    rapport_config= models.ForeignKey(Config_rapport,default=1, on_delete=models.CASCADE)
 
 class Config_blocage(models.Model):
     id_config_blocage= models.AutoField(primary_key=True)

@@ -34,6 +34,8 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     Montant = serializers.SerializerMethodField()
     rapport = serializers.SerializerMethodField()
     rapport_state = serializers.SerializerMethodField()
+   
+    
     def get_justif(self, obj):
         justif = Justifs.objects.filter(id_envoye_id_id  = obj.id_envoye).exists()
         if justif:
@@ -141,7 +143,14 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     
 
         return rapp
+    def get_rapport_config(self, obj):
+        mission = obj.id_mission.type_processus.id_process
+        
+        rapport= Config_rapport.objects.filter(id_process_id=mission).values()
+        id=rapport[0]['id_config_rapport']
+        return id
 
+    
     def get_rapport_state(self, obj):
         sub= False
         valid = False
@@ -201,6 +210,7 @@ class MissiontSerializer(serializers.ModelSerializer):
     full_name_chef_delegation = serializers.SerializerMethodField()
     entite = serializers.SerializerMethodField()
     etape = serializers.SerializerMethodField()
+    cout= serializers.SerializerMethodField()
     cout= serializers.SerializerMethodField()
 
     
@@ -282,6 +292,23 @@ class UserSerializer(serializers.ModelSerializer):
     rights = serializers.SerializerMethodField()
     full_name_user=serializers.SerializerMethodField()
     url_photo = serializers.SerializerMethodField()
+    mission_rapport_validader = serializers.SerializerMethodField()
+    def get_mission_rapport_validader(self, obj):
+        
+        lsgroup=[]
+        lsprocess=[]
+        lsmission=[]
+        group= obj.groups.all().values()
+        for x in range(0,len(group)):
+            lsgroup.append(group[x]['id'])
+        config_rapport= Config_rapport.objects.filter(Validateur_id__in=lsgroup).values()
+        for x in range(0,len(config_rapport)):
+            lsprocess.append(config_rapport[x]['id_process_id_id'])
+        mission= Mission.objects.filter(type_processus_id__in=lsprocess).values()
+        for x in range(0,len(mission)):
+            lsmission.append(mission[x]['id_mission'])
+
+        return lsmission
     def get_url_photo(self, obj):
         print("5555555555555555")
         print(type(obj.id))
@@ -295,7 +322,7 @@ class UserSerializer(serializers.ModelSerializer):
         return image
     class Meta:
         model = User
-        fields = ['id', 'username', 'email','full_name_user','first_name','last_name','is_superuser', 'groups','mission','rights','url_photo']
+        fields = ['id', 'username', 'email','full_name_user','first_name','last_name','is_superuser', 'groups','mission','rights','mission_rapport_validader','url_photo']
 
     def get_full_name_user(self, obj):
         #envoye= Envoye.objects.filter(id_mission_id=obj.id_mission).filter(role='chef de delegation').values('nom_employe','prenom_employe')
@@ -558,7 +585,7 @@ class Config_rapportSerializer(serializers.ModelSerializer):
 class RapportSerializer(serializers.ModelSerializer):
     class Meta:
         model= Rapport
-        fields = ['fichier','id_rapport','resultats_attendu','recommendations','date_creation','id_createur','date_derniere_modification','validation','id_validateur','id_envoye1']
+        fields = ['fichier','id_rapport','resultats_attendu','recommendations','date_creation','id_createur','date_derniere_modification','validation','id_validateur','id_envoye1','rapport_config']
 
 
 

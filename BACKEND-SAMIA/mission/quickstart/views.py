@@ -65,6 +65,27 @@ def mission_to_envoye(mission):
     for env in envoye:
         is_config_blocage(env['id_envoye'])
 
+def check_if_rapport_obligatoire(env):
+    obl=False
+    
+    envoye= Envoye.objects.filter(id_envoye=int(env)).values()
+    print(envoye)
+    id_mission= envoye[0]['id_mission_id']
+    mission = Mission.objects.filter(id_mission=int(id_mission)).values()
+    id_process = mission[0]['type_processus_id']
+    config_rapport = Config_rapport.objects.filter(id_process_id_id=int(id_process)).values()
+    if config_rapport[0]['expression']=='ET':
+       if config_rapport[0]['acteur']=='T': 
+            obl=True
+       elif config_rapport[0]['acteur']=='C' and envoye[0]['role']=='chef de delegation':
+           obl=True
+    
+    return obl
+
+def check_if_rapport_valide(env):
+    valide=False
+    return valide
+
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -1387,8 +1408,21 @@ class delais_bareme(APIView):
 
 class Finalisation(APIView):
     def post(self,request):
+        debloque=''
+        bloque=''
+        envoye_rapport_obligatoire={}
+        finalisation=[]
         id_mission= request.data['id_mission']
-        return Response( "Hipipip Houra", status=status.HTTP_206_PARTIAL_CONTENT)
+        envoye = Envoye.objects.filter(id_mission=int(id_mission)).values()
+        for x in range(0,len(envoye)):
+            envoye_rapport_obligatoire = dict(envoye_rapport_obligatoire)
+            rap_obl=check_if_rapport_obligatoire(envoye[x]['id_envoye'])
+            envoye_rapport_obligatoire['id_envoye']=envoye[x]['id_envoye']
+            envoye_rapport_obligatoire['rapport_obligatoire']=rap_obl
+            finalisation.append(envoye_rapport_obligatoire)
+
+
+        return Response(finalisation , status=status.HTTP_202_ACCEPTED )
 
 class Config_blocageList(generics.ListCreateAPIView):
      queryset = Config_blocage.objects.all()
@@ -1417,6 +1451,8 @@ class RapportList(generics.ListCreateAPIView):
      def post(self,request,format=None):
          print(request.data)
          data={}
+        
+         data['rapport_config']= request.data['rapport_config']
          data['fichier']= request.data['fichier']
          data['resultats_attendu']= str(request.data['resultats_attendu'])
          data['recommendations']= str(request.data['recommendations'])
@@ -1458,6 +1494,12 @@ class RapportDetail(APIView):
 class rapport_envoyeDetail(APIView):
     def get(self,request,id_envoye):
         rapport= Rapport.objects.filter(id_envoye1_id=id_envoye).values()
+        return Response(rapport)
+
+class rapport_verif(APIView):
+    def get(self,request):
+        print(request.data)
+        rapport= ''
         return Response(rapport)
 
 class Config_rapportList(generics.ListCreateAPIView):

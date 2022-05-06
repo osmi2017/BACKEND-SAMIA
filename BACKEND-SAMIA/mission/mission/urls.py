@@ -100,6 +100,7 @@ urlpatterns = [
     path('justification/', views.justificationList.as_view()),
     path('justificationList/<int:envoye>/', views.justificationList.as_view()),
     path('justificationDetail/<int:pk>/', views.justificationDetail.as_view()),
+    path('Finalisation/', views.Finalisation.as_view()),
     path('authentification', views.StepprocessDetail.as_view()),
     path('api-token-auth/', views.CustomAuthToken.as_view()),
     

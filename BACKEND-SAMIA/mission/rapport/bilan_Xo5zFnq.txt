@@ -1,0 +1,105 @@
+resultat = 
+IF(
+    OR(LEFT(F_COMPTEG[CG_Num],3) IN {"211"}, LEFT(F_COMPTEG[CG_Num],4) IN {"2181", "2191"}), "Frais de développement et de prospection",
+    IF(
+        OR(LEFT(F_COMPTEG[CG_Num],3) IN {"212", "213", "214"}, LEFT(F_COMPTEG[CG_Num],4) IN {"2193"}), "Brevets, licences, logiciels et droits similaires",
+        IF(
+            LEFT(F_COMPTEG[CG_Num],3) IN {"215", "216"},"Fonds commercial et droit au bail",
+            IF(
+                OR(
+                    AND(
+                        LEFT(F_COMPTEG[CG_Num],3) IN {"218", "217"}, 
+                        NOT( LEFT(F_COMPTEG[CG_Num],4) IN {"2181"})
+                    ),
+                    LEFT(F_COMPTEG[CG_Num],4) IN {"2198"}
+                ),"Autres immobilisations incorporelles",
+                IF(
+                    LEFT(F_COMPTEG[CG_Num],2) IN {"22"}, "Terrains dont Placement en Net",
+                    IF(
+                        OR(LEFT(F_COMPTEG[CG_Num],3) IN {"231", "232", "233", "237"}, LEFT(F_COMPTEG[CG_Num],4) IN {"2391", "2393"}),
+                        "Bâtiments dont Placement en Net",
+                        IF(
+                            OR(LEFT(F_COMPTEG[CG_Num],3) IN {"234", "235", "238"}, LEFT(F_COMPTEG[CG_Num],4) IN {"2392", "2394", "2395", "2398"}),
+                            "Aménagements, agencements et installations",
+                            IF(
+                                AND(
+                                    LEFT(F_COMPTEG[CG_Num],2) IN {"24"}, 
+                                    AND(
+                                        NOT( LEFT(F_COMPTEG[CG_Num],3) IN {"245"}),
+                                        NOT( LEFT(F_COMPTEG[CG_Num],4) IN {"2495"})
+                                    )
+                                ),
+                                "Matériel, mobilier et actifs biologiques",
+                                IF(
+                                    OR(
+                                        LEFT(F_COMPTEG[CG_Num],3) IN {"245"},
+                                        LEFT(F_COMPTEG[CG_Num],4) IN {"2495"}
+                                    ),
+                                    "Matériel de transport",
+                                    IF(
+                                        LEFT(F_COMPTEG[CG_Num],3) IN {"251", "252"},
+                                        "AVANCES ET ACOMPTES VERSES SUR IMMOBILISATIONS",
+                                        IF(
+                                            LEFT(F_COMPTEG[CG_Num],2) IN {"26"},
+                                            "Titres de participation",
+                                            IF(
+                                                LEFT(F_COMPTEG[CG_Num],2) IN {"27"},
+                                                "Autres immobilisations financières",
+                                                IF(
+                                                    LEFT(F_COMPTEG[CG_Num],3) IN {"485", "488"},
+                                                    "ACTIF CIRCULANT HAO",
+                                                    IF(
+                                                        LEFT(F_COMPTEG[CG_Num],2) IN {"31", "32", "33", "34", "35", "36", "37", "38"},
+                                                        "STOCKS ET ENCOURS",
+                                                        IF(
+                                                            LEFT(F_COMPTEG[CG_Num],3) IN {"409"},
+                                                            "Fournisseurs avances versées",
+                                                            IF(
+                                                                AND(
+                                                                    LEFT(F_COMPTEG[CG_Num],2) IN {"41"},
+                                                                    NOT(LEFT(F_COMPTEG[CG_Num],3) IN {"419"})
+                                                                ),
+                                                                "Clients",
+                                                                IF(
+                                                                  AND(
+                                                                    LEFT(F_COMPTEG[CG_Num],3) IN {"185", "186", "187", "188", "42", "43", "44", "45", "46", "47"},
+                                                                    NOT(LEFT(F_COMPTEG[CG_Num],3) IN {"478"})
+                                                                  ),
+                                                                  "Autres créances",
+                                                                  IF(
+                                                                      LEFT(F_COMPTEG[CG_Num],2) IN {"50"},
+                                                                      "Titres de placement",
+                                                                      IF(
+                                                                          LEFT(F_COMPTEG[CG_Num],2) IN {"51"},
+                                                                          "Valeurs à encaisser",
+                                                                          IF(
+                                                                              OR(
+                                                                                  LEFT(F_COMPTEG[CG_Num],2) IN {"52", "53", "54", "55", "57"},
+                                                                                  LEFT(F_COMPTEG[CG_Num],3) IN {"581", "582"}
+                                                                                ),
+                                                                                "Banques chèques postaux caisse et assimilés",
+                                                                                IF(
+                                                                                    LEFT(F_COMPTEG[CG_Num],3) IN {"478"},
+                                                                                    "Ecart de conversion-Actif"
+                                                                                )
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                )
+
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+)
