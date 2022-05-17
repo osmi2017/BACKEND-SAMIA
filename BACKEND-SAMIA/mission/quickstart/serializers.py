@@ -134,12 +134,13 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     def get_rapport(self, obj):
         rapp=False
         mission = obj.id_mission.type_processus.id_process
-        
-        rapport= Config_rapport.objects.filter(id_process_id=mission).values()
-        if rapport[0]['acteur']=="C" and obj.role=="chef de delegation":
-            rapp= True
-        elif rapport[0]['acteur']=="T":
-            rapp= True
+        rapport1=Config_rapport.objects.filter(id_process_id=mission).exists()
+        if rapport1:
+            rapport= Config_rapport.objects.filter(id_process_id=mission).values()
+            if rapport[0]['acteur']=="C" and obj.role=="chef de delegation":
+                rapp= True
+            elif rapport[0]['acteur']=="T":
+                rapp= True
     
 
         return rapp

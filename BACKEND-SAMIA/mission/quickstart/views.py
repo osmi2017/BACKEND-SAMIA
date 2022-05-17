@@ -84,9 +84,108 @@ def check_if_rapport_obligatoire(env):
 
 def check_if_rapport_valide(env):
     valide=False
+    rapport= Rapport.objects.filter(id_envoye1_id= int(env)).exists()
+    if rapport:
+        rapport= Rapport.objects.filter(id_envoye1_id= int(env)).values()
+        print(env)
+        print(rapport)
+        if rapport[0]['validation']!= None:
+            valide=True
+            Bloque.objects.filter(id_envoye_id_id=int(env)).filter(step_process_id=10).delete()
     return valide
 
+def check_if_envoye_bloque(env):
+    bloque= True
+    envoye= Envoye.objects.filter(id_envoye=int(env)).values()
+    id_mission1= envoye[0]['id_mission_id']
+    mission= Mission.objects.filter(id_mission=int(id_mission1)).values()
+    currents_steps= mission[0]['current_step']
+    process_id= mission[0]['type_processus_id']
+    bloque_config= Config_blocage.objects.filter(id_process_id_id=int(process_id)).values()
+    bloque_step= Stepprocess.objects.filter(id_stepprocess=bloque_config[0]['step_fin_id']).values()
+    bloque_type_step= Typesteps.objects.filter(id_typesteps=bloque_step[0]['type_steps_id']).values()
+    if currents_steps>bloque_step[0]['order_steps']:
+        bloque=False
+        
+    elif bloque_type_step[0]['nom_typesteps']=='validation des justifications' or bloque_type_step[0]['nom_typesteps']=='justification':
+        if envoye[0]['validation_justier']==True:
+            bloque=False
+    if bloque==False:
+        Bloque.objects.filter(id_envoye_id_id=envoye[0]['id_envoye']).exclude(step_process_id=10).delete()
+    step_process= Stepprocess.objects.filter(id_process_id=process_id).values().order_by('order_steps')
+    final_step=len(step_process)
+    print('ki0')
+    print(currents_steps)
+    print(env)
+    #print(step_process.filter(order_steps=final_step).values())
+    return bloque
 
+def check_rapport_final(final):
+
+   rapport= {}
+   rapport_return=[]
+   #rapport= final[0]
+   for x in range(0,len(final)):
+      print('femua')
+      print(x)
+      print(final[x]) 
+      msg={}
+      rapport= dict(rapport)
+      msg=dict(msg) 
+      rapport['id_envoye']=final[x]['id_envoye']
+      envoye= Envoye.objects.filter(id_envoye=int(final[x]['id_envoye'])).values()
+      mission= Mission.objects.filter(id_mission=envoye[0]['id_mission_id']).values()
+      stepprocesss= Stepprocess.objects.filter(id_process_id =mission[0]['type_processus_id']).filter(order_steps=mission[0]['current_step']).values()
+      type_process= Typesteps.objects.filter(id_typesteps = stepprocesss[0]['type_steps_id']).values()
+      employe= Employe.objects.filter(id_employe=envoye[0]['id_employe_id']).values() 
+      rapport['id_employe']=employe[0]['id_employe']
+      rapport['nom_employe']=employe[0]['nom_employe']
+      rapport['prenoms_employe']=employe[0]['prenoms_employe']
+      msg['msg']= "L'employe numéro "+ str(employe[0]['id_employe'])+" nommé "+ str(employe[0]['nom_employe'])
+      if final[x]['rapport_obligatoire']==True and final[x]['rapport_valide']==True:
+          
+          if final[x]['bloque']== False:
+              msg['msg']=msg['msg']+ " est débloqué sur la mission "+str(mission[0]['numero_mission'])
+              msg['statut']=True
+              lst1=[]
+              lst1.append(msg)
+              rapport['msg']=lst1
+          else:
+              msg['msg']=msg['msg']+ " est bloqué sur la mission "+str(mission[0]['numero_mission'])+ " à l'étape "+type_process[0]['nom_typesteps']
+              msg['statut']=False
+              lst1=[]
+              lst1.append(msg)
+              rapport['msg']=lst1
+      elif final[x]['rapport_obligatoire']==True and final[x]['rapport_valide']==False:
+          msg['msg']=msg['msg']+ " est bloqué sur la mission pou rapport non validé "+str(mission[0]['numero_mission'])
+          msg['statut']=False
+          rapport['msg']=msg
+          if final[x]['bloque']== True:
+             msg['msg']=msg['msg']+ " est bloqué sur la mission "+str(mission[0]['numero_mission'])+ " à l'étape "+type_process[0]['nom_typesteps']
+             msg['statut']=False
+             lst1=[]
+             lst1.append(msg)
+             rapport['msg']=lst1
+      else:
+           if final[x]['bloque']== False:
+              msg['msg']=msg['msg']+ " est débloqué sur la mission "+str(mission[0]['numero_mission'])
+              msg['statut']=True
+              lst1=[]
+              lst1.append(msg)
+              rapport['msg']=lst1 
+           else:
+              msg['msg']=msg['msg']+ " est bloqué sur la mission "+str(mission[0]['numero_mission'])+ " à l'étape "+type_process[0]['nom_typesteps']
+              msg['statut']=False
+              lst1=[]
+              lst1.append(msg)
+              rapport['msg']=lst1 
+
+      rapport_return.append(rapport)
+      print('femua')
+      print(x)
+      print(rapport_return) 
+
+   return rapport_return
 
 class CustomAuthToken(ObtainAuthToken):
 
@@ -188,7 +287,10 @@ class MesMissionList(APIView):
         try:
             data1['contexte_mission'] = request.data['contexte']
             data1['objectifs_mission'] = request.data['objectif']
-            data1['frais_extra'] = request.data['divers'] #a ajouter
+            if request.data['divers']:
+                data1['frais_extra'] = request.data['divers']
+            else:
+                data1['frais_extra'] = 0 #a ajouter
             data1['chg_extra'] ="0"
             data1['frais_changes'] = "0"
             zone_id = request.data['id_zone']
@@ -411,7 +513,7 @@ class MesMissionList(APIView):
                         print(serializer5.errors)
             
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response("Mission créée avec succès", status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -428,7 +530,7 @@ class MesMissionTraitement(APIView):
                 
                 list_group.append(group.id)
         print("iiiiiiiiiiiiiiiiiiiiikkkkkkkkkkkkkkkkkkkkkkkkkk")
-        print(list_group)
+        #print(list_group)
         step_process = Stepprocess.objects.filter(cible_id__in=list_group)
         for step in step_process:
             
@@ -438,7 +540,7 @@ class MesMissionTraitement(APIView):
                 print(step.id_process_id)    
 
         try:
-            mission = Mission.objects.filter(id_demandeur_id=id).distinct() | Mission.objects.filter(type_processus_id__in=list_processs).distinct() 
+            mission = Mission.objects.filter(id_demandeur_id=id).distinct().order_by('-id_mission') | Mission.objects.filter(type_processus_id__in=list_processs).distinct().order_by('-id_mission') 
         
         
             serializer = MissiontSerializer(mission,context={'request': request}, many=True) 
@@ -1413,16 +1515,30 @@ class Finalisation(APIView):
         envoye_rapport_obligatoire={}
         finalisation=[]
         id_mission= request.data['id_mission']
+        mission= Mission.objects.filter(id_mission=int(id_mission)).values()
+        step_process= Stepprocess.objects.filter(id_process_id=mission[0]['type_processus_id']).values().order_by('order_steps')
+        final_step=len(step_process)
+        #print(step_process.filter(order_steps=final_step).values())
         envoye = Envoye.objects.filter(id_mission=int(id_mission)).values()
-        for x in range(0,len(envoye)):
+        for x in range(len(envoye)):
             envoye_rapport_obligatoire = dict(envoye_rapport_obligatoire)
+           
             rap_obl=check_if_rapport_obligatoire(envoye[x]['id_envoye'])
+            rap_valid=check_if_rapport_valide(envoye[x]['id_envoye'])
+            env_bloque= check_if_envoye_bloque(envoye[x]['id_envoye'])
             envoye_rapport_obligatoire['id_envoye']=envoye[x]['id_envoye']
             envoye_rapport_obligatoire['rapport_obligatoire']=rap_obl
+
+            envoye_rapport_obligatoire['rapport_valide']=rap_valid
+            envoye_rapport_obligatoire['bloque']=env_bloque
+            
             finalisation.append(envoye_rapport_obligatoire)
+        
+        print(finalisation)
+            
+        rapport_final= check_rapport_final(finalisation)   
 
-
-        return Response(finalisation , status=status.HTTP_202_ACCEPTED )
+        return Response(rapport_final , status=status.HTTP_202_ACCEPTED )
 
 class Config_blocageList(generics.ListCreateAPIView):
      queryset = Config_blocage.objects.all()
