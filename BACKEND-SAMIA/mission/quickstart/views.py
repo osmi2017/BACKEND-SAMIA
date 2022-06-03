@@ -33,10 +33,53 @@ from django.db.models import Count
 from django.shortcuts import render
 from django.core.files import File
 from django.core.serializers.json import DjangoJSONEncoder
-
-
-
+from dateutil import tz, parser
+from quickstart.auth_helper import get_sign_in_flow, get_token_from_code, store_user, remove_user_and_token, get_token,get_user
 from django.contrib.auth.models import Permission
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect
+
+
+def test_auth(request):
+    print("kikiki")
+    result = get_token_from_code(request)
+    print(result)
+
+  #Get the user's profile
+    user = get_user(result['access_token'])
+    print("kikiki")
+    print(user)
+
+  # Store user
+    store_user(request, user)
+
+    return redirect("http://192.168.0.205:8080/processus/")
+
+
+def initialize_context(request):
+  context = {}
+
+  # Check for any errors in the session
+  error = request.session.pop('flash_error', None)
+
+  if error != None:
+    context['errors'] = []
+    context['errors'].append(error)
+
+  # Check for user in the session
+  context['user'] = request.session.get('user', {'is_authenticated': False})
+  return context
+
+def sign_in(request):
+  # Get the sign-in flow
+  flow = get_sign_in_flow()
+  # Save the expected flow so we can use it in the callback
+  try:
+    request.session['auth_flow'] = flow
+  except Exception as e:
+    print(e)
+  # Redirect to the Azure sign-in page
+  return HttpResponseRedirect(flow['auth_uri'])
 
 def is_config_blocage(envo):
     envoye= Envoye.objects.filter(id_envoye=envo).values('id_mission','id_employe')
@@ -210,6 +253,10 @@ class CustomAuthToken(ObtainAuthToken):
         #except:
             #return JsonResponse({'error':'Login ou mot de passe incorrecte'})
 
+class Officeauth(APIView):
+    def get(self,request):
+        print(request.data)
+        return Response("Super", status=status.HTTP_200_OK)
 
 class UserViewSet(viewsets.ModelViewSet):
     """

@@ -34,7 +34,9 @@ SECRET_KEY = 'django-insecure-4i)*!9*l5sa$&-g9p#@ds2^(3lxr^^is$aa9ymb4*i#$$1sgl!
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['172.30.13.198','192.168.0.37','172.30.13.217','172.30.19.178','172.30.19.118']
+ALLOWED_HOSTS = ['*']
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 
 # Application definition
@@ -44,17 +46,19 @@ INSTALLED_APPS = [
     'quickstart.apps.QuickstartConfig',
     'django.contrib.admin',
     'django.contrib.auth',
+    'microsoft_auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'django_rest_passwordreset',
     'rest_framework.authtoken',
     'corsheaders',
     
 ]
-
+SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,7 +78,7 @@ MIDDLEWARE = [
 #   "http://localhost:8080"
    
 #]
-CORS_ALLOW_ALL_ORIGINS= True
+#CORS_ALLOW_ALL_ORIGINS= True
 
 ROOT_URLCONF = 'mission.urls'
 
@@ -92,6 +96,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'microsoft_auth.context_processors.microsoft',
             ],
         },
     },
@@ -180,3 +185,33 @@ EMAIL_HOST_USER = 'support.appinov@snedai.com'
 EMAIL_HOST_PASSWORD = '2018@@Appin@v'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 100000000
+
+AUTHENTICATION_BACKENDS = [
+    'microsoft_auth.backends.MicrosoftAuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend' # if you also want to use Django's authentication
+    # I recommend keeping this with at least one database superuser in case of unable to use others
+]
+
+# values you got from step 2 from your Mirosoft app
+MICROSOFT_AUTH_CLIENT_ID = '12cfcb53-3acf-4494-9c8e-0a670844a819'
+MICROSOFT_AUTH_CLIENT_SECRET = 'hk98Q~ekEb-rNvVVHcSpbpSdTpIuqSkmGYrVwamv'
+# Tenant ID is also needed for single tenant applications
+# MICROSOFT_AUTH_TENANT_ID = 'your-tenant-id-from-apps.dev.microsoft.com'
+
+# pick one MICROSOFT_AUTH_LOGIN_TYPE value
+# Microsoft authentication
+# include Microsoft Accounts, Office 365 Enterpirse and Azure AD accounts
+MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
+
+# Xbox Live authentication
+#MICROSOFT_AUTH_LOGIN_TYPE = 'xbl'  # Xbox Live authentication
+
+MICROSOFT = {
+    "app_id": "12cfcb53-3acf-4494-9c8e-0a670844a819",
+    "app_secret": "hk98Q~ekEb-rNvVVHcSpbpSdTpIuqSkmGYrVwamv",
+    "redirect": "http://localhost:8000/test_auth/",
+    "scopes": ["user.read"],
+    "authority": "https://login.microsoftonline.com/common",  # or using tenant "https://login.microsoftonline.com/{tenant}",
+    "valid_email_domains": ["<list_of_valid_domains>"],
+    "logout_uri": "http://localhost:8000/admin/logout"
+}

@@ -100,9 +100,15 @@ urlpatterns = [
     path('justification/', views.justificationList.as_view()),
     path('justificationList/<int:envoye>/', views.justificationList.as_view()),
     path('justificationDetail/<int:pk>/', views.justificationDetail.as_view()),
+    path('aufficeauth/', views.Officeauth.as_view()),
     
     path('authentification', views.StepprocessDetail.as_view()),
     path('api-token-auth/', views.CustomAuthToken.as_view()),
+    path('signin_office/', views.sign_in, name='signin'),
+    path('test_auth/', views.test_auth, name='test_auth'),
+
+    #path('signout', views.home, name='signout'),
+    path('microsoftauthentification/', include('microsoft_auth.urls', namespace='microsoft')),
     
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

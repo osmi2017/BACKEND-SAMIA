@@ -1,0 +1,8 @@
+app_id: "12cfcb53-3acf-4494-9c8e-0a670844a819"
+app_secret: "hk98Q~ekEb-rNvVVHcSpbpSdTpIuqSkmGYrVwamv"
+redirect: "http://localhost:8000/test_auth/"
+scopes:
+  - user.read
+  - mailboxsettings.read
+  - calendars.readwrite
+authority: "https://login.microsoftonline.com/common"
