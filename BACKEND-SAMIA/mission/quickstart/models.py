@@ -331,8 +331,8 @@ class Rapport(models.Model):
 class Config_blocage(models.Model):
     id_config_blocage= models.AutoField(primary_key=True)
     id_process_id = models.ForeignKey(Processus, on_delete=models.CASCADE)
-    step_debut = models.ForeignKey(Stepprocess,related_name='sep_debut', on_delete=models.CASCADE)
-    step_fin = models.ForeignKey(Stepprocess,related_name='sep_fin', on_delete=models.CASCADE)
+    step_debut = models.ForeignKey(Stepprocess,related_name='step_debut', on_delete=models.CASCADE)
+    step_fin = models.ForeignKey(Stepprocess,related_name='step_fin', on_delete=models.CASCADE)
 
 class Bloque(models.Model):
     id_bloque= models.AutoField(primary_key=True)

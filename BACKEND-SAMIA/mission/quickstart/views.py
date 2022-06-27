@@ -84,7 +84,7 @@ def sign_in(request):
 def is_config_blocage(envo):
     envoye= Envoye.objects.filter(id_envoye=envo).values('id_mission','id_employe')
     mission=Mission.objects.filter(id_mission=int(envoye[0]['id_mission'])).values('type_processus','current_step')
-    config_blocage=Config_blocage.objects.filter(id_process_id=int(mission[0]['type_processus'])).values('step_debut')
+    config_blocage=Config_blocage.objects.filter(id_process_id=int(mission[0]['type_processus'])).values('step_debut','step_fin')
     if int(mission[0]['current_step'])>int(config_blocage[0]['step_debut']):
         obj = Employe.objects.get(id_employe=int(envoye[0]['id_employe']))
                 
@@ -93,7 +93,7 @@ def is_config_blocage(envo):
         obj.save()
     bloque= Bloque.objects.filter(id_envoye_id=envo).exclude(step_process=10).exists()
     if not bloque:
-       step_process= Stepprocess.objects.filter(order_steps=config_blocage[0]['step_fin']).values('')
+       step_process= Stepprocess.objects.filter(id_stepprocess=config_blocage[0]['step_fin']).values('type_steps')
        data={}
        data['id_envoye_id']=envo
        data['step_process']=step_process[0]['type_steps']
@@ -125,6 +125,14 @@ def check_if_rapport_obligatoire(env):
     
     return obl
 
+def mission_billet_no(mission):
+    mission = Mission.objects.filter(id_mission=mission).values()
+    print('okaiuzumaki')
+    print(mission)
+    if mission[0]['avion']==False and mission[0]['relance_cible']=="billet":
+        return True
+    return False
+
 def check_if_rapport_valide(env):
     valide=False
     rapport= Rapport.objects.filter(id_envoye1_id= int(env)).exists()
@@ -147,19 +155,27 @@ def check_if_envoye_bloque(env):
     bloque_config= Config_blocage.objects.filter(id_process_id_id=int(process_id)).values()
     bloque_step= Stepprocess.objects.filter(id_stepprocess=bloque_config[0]['step_fin_id']).values()
     bloque_type_step= Typesteps.objects.filter(id_typesteps=bloque_step[0]['type_steps_id']).values()
-    if currents_steps>bloque_step[0]['order_steps']:
+    
+    if int(currents_steps)>=int(bloque_step[0]['order_steps'])-1:
         bloque=False
+        print('bloque')
+        print(bloque)
+
+        
         
     elif bloque_type_step[0]['nom_typesteps']=='validation des justifications' or bloque_type_step[0]['nom_typesteps']=='justification':
         if envoye[0]['validation_justier']==True:
             bloque=False
+            
     if bloque==False:
         Bloque.objects.filter(id_envoye_id_id=envoye[0]['id_envoye']).exclude(step_process_id=10).delete()
     step_process= Stepprocess.objects.filter(id_process_id=process_id).values().order_by('order_steps')
     final_step=len(step_process)
-    print('ki0')
+    print('ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0ki0')
     print(currents_steps)
-    print(env)
+    print(bloque_step[0]['order_steps'])
+    print(bloque)
+    print(envoye[0]['id_envoye'])
     #print(step_process.filter(order_steps=final_step).values())
     return bloque
 
@@ -233,7 +249,7 @@ def check_rapport_final(final):
 class CustomAuthToken(ObtainAuthToken):
 
     def post(self, request, *args, **kwargs):
-       # try:
+        try:
             serializer = self.serializer_class(data=request.data,
                                             context={'request': request})
             serializer.is_valid(raise_exception=True)
@@ -250,8 +266,8 @@ class CustomAuthToken(ObtainAuthToken):
                     'lastname':user.last_name
 
             })
-        #except:
-            #return JsonResponse({'error':'Login ou mot de passe incorrecte'})
+        except:
+            return JsonResponse({'error':'Login ou mot de passe incorrecte'})
 
 class Officeauth(APIView):
     def get(self,request):
@@ -290,7 +306,7 @@ class MesMissionList(APIView):
         
         envoye=Envoye.objects.filter(id_employe__in= employe).values('id_envoye')
         ##print(envoye)
-        mission = Mission.objects.filter(envoye__id_envoye__in=envoye).distinct()
+        mission = Mission.objects.filter(envoye__id_envoye__in=envoye).distinct().order_by('-id_mission')
         serializer = MissiontSerializer(mission,context={'request': request}, many=True)
         return Response(serializer.data)
         # if data:
@@ -1040,7 +1056,7 @@ class Validations(APIView):
             processusid = mission[0]['type_processus_id'] 
             add=1
             stepprocess = Stepprocess.objects.filter(id_process_id =int(processusid) ).filter(order_steps=currentstep).values('cible_id','type_steps_id')
-            nextprocess = Stepprocess.objects.filter(id_process_id =int(processusid) ).filter(order_steps=currentstep+add).values('cible_id','type_steps_id')
+            nextprocess = Stepprocess.objects.filter(id_process_id =int(processusid) ).filter(order_steps=currentstep+add+1).values('cible_id','type_steps_id')
             currentnomsteps = Typesteps.objects.get(id_typesteps=int(stepprocess[0]['type_steps_id']))
             nextnomsteps = Typesteps.objects.get(id_typesteps=int(nextprocess[0]['type_steps_id']))
             groupe = Group.objects.filter(pk=int(nextprocess[0]['cible_id'])).values('id','name')
@@ -1070,6 +1086,7 @@ class Validations(APIView):
                 groupemail=[user.email]
                 currentsible = str(Group.objects.get(id=nextprocess[0]['cible_id']))
                 relance_cible = str(Group.objects.get(id=nextprocess1[0]['cible_id']))
+                print('oioi '+relance_cible)
         except Exception as e:
             print(e)
             return Response(e, status=status.HTTP_400_BAD_REQUEST)
@@ -1095,12 +1112,14 @@ class Validations(APIView):
                 print(":( no1 ") 
                 return Response("l' utilisateur  n'est pas autorisé à effectuer une validation ", status=status.HTTP_403_FORBIDDEN)
             if int(id_user) in groupid:
-                print(":) yes2")  
+                print(":) yes2")
+                print(groupid)  
             else:
                 print("zzzzzzzzzzzzzzzzmmmmmmmmmmmmmmmmmmmmmm") 
                 print('id_user:{}'.format(groupe[0]['name']))
                 print('groupe:{}'.format(groupe))
                 print(":( no2 ")
+                print(groupid)
                 return Response("l' utilisateur  n'est pas autorisé à effectuer cette action ", status=status.HTTP_403_FORBIDDEN)        
             data4={} 
         except Exception as e:
@@ -1109,6 +1128,7 @@ class Validations(APIView):
         try:       
             if user.has_perm('quickstart.validation') and validation=='validation' and int(id_user) in groupid:
                 print("111") 
+                print('oioi111 '+relance_cible)
                 obj = Mission.objects.get(pk=int(idmission))
                 
                 obj.current_step = currentstep+add
@@ -1135,6 +1155,7 @@ class Validations(APIView):
                         return Response("Validez avec succès",status=status.HTTP_201_CREATED)
                         
                 else:
+                        print(serializer3)                    
                         return Response(serializer3.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
@@ -1337,6 +1358,19 @@ class NumeroDetail(APIView):
         typesteps=  Typesteps.objects.filter(id_typesteps=stepprocess[0]['type_steps_id']).values('nom_typesteps')
         query3 = query1.update(numero_mission=request.data['id_mission'],current_step=int(currentstep)+1,relance_cible=str(typesteps[0]['nom_typesteps'])) 
         mission_to_envoye(int(request.data['id_mission']))
+
+        if mission_billet_no(request.data['id_mission']):
+            query4 = Mission.objects.filter(id_mission=request.data['id_mission'])
+            query5 = query4.values('current_step','type_processus_id')
+            currentstep1 = query2[0]['current_step']
+            type_processus1 = query5[0]['type_processus_id']
+            stepprocess1= Stepprocess.objects.filter(order_steps=int(currentstep1)+2,id_process_id=int(type_processus1)).values('type_steps_id')
+            typesteps1=  Typesteps.objects.filter(id_typesteps=stepprocess1[0]['type_steps_id']).values('nom_typesteps')
+            print('kakakmikakak')
+            print(currentstep1)
+            print(typesteps1[0]['nom_typesteps'])
+            query3 = query4.update(current_step=int(currentstep1)+1,relance_cible=str(typesteps1[0]['nom_typesteps'])) 
+
         return Response("Numéro attribué", status=status.HTTP_202_ACCEPTED)
     
 
@@ -1615,7 +1649,7 @@ class RapportList(generics.ListCreateAPIView):
          print(request.data)
          data={}
         
-         data['rapport_config']= request.data['rapport_config']
+         
          data['fichier']= request.data['fichier']
          data['resultats_attendu']= str(request.data['resultats_attendu'])
          data['recommendations']= str(request.data['recommendations'])
@@ -1626,6 +1660,7 @@ class RapportList(generics.ListCreateAPIView):
          #data['validation']= request.data['validation']
          #data['id_validateur']= request.data['id_validateur']
          data['id_envoye1']= int(request.data['id_envoye1'])
+         data['rapport_config']= request.data['rapport_config']
          
          serializers= RapportSerializer(data=data)
          print(serializers)

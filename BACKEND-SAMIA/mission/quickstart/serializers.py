@@ -34,6 +34,7 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     Montant = serializers.SerializerMethodField()
     rapport = serializers.SerializerMethodField()
     rapport_state = serializers.SerializerMethodField()
+    rapport_config = serializers.SerializerMethodField()
    
     
     def get_justif(self, obj):
@@ -134,15 +135,24 @@ class EnvoyeSerializer(serializers.ModelSerializer):
     def get_rapport(self, obj):
         rapp=False
         mission = obj.id_mission.type_processus.id_process
+        print(obj.id_envoye)
+        print(obj.id_mission)
+        print(obj.id_mission.type_processus.id_process)
+
         rapport1=Config_rapport.objects.filter(id_process_id=mission).exists()
+        print(obj.role)
         if rapport1:
+            
             rapport= Config_rapport.objects.filter(id_process_id=mission).values()
+            print(rapport[0]['acteur'])
             if rapport[0]['acteur']=="C" and obj.role=="chef de delegation":
                 rapp= True
+                
+                
             elif rapport[0]['acteur']=="T":
                 rapp= True
     
-
+        print(rapp)
         return rapp
     def get_rapport_config(self, obj):
         mission = obj.id_mission.type_processus.id_process
@@ -167,11 +177,23 @@ class EnvoyeSerializer(serializers.ModelSerializer):
 
         return rep
 
+    def get_rapport_config(self, obj):
+        rap=1
+        mission=Mission.objects.filter(id_mission=obj.id_mission.id_mission).values()
+        print(mission)
+        processus= int(mission[0]['type_processus_id'])
+        config_rapport= Config_rapport.objects.filter( id_process_id=processus).exists()
+        c_rapport= Config_rapport.objects.filter( id_process_id=processus).values()
+        if config_rapport:
+           rap= c_rapport[0]['id_config_rapport']
+ 
+        return rap
+
     
     
     class Meta:
         model = Envoye
-        fields = ['id_envoye', 'id_mission','userid', 'id_employe','nom_employe','prenom_employe','role','billet_avion','statut_des_justifs','hebergement','perdiem','total','Montant','Paye','Receptionner','justifier','validation_justier','url_photo','justif','rapport','rapport_state']
+        fields = ['id_envoye', 'id_mission','userid', 'id_employe','nom_employe','prenom_employe','role','billet_avion','statut_des_justifs','hebergement','perdiem','total','Montant','Paye','Receptionner','justifier','validation_justier','url_photo','justif','rapport','rapport_state','rapport_config']
 
         extra_kwargs = {'id_mission_id': {'read_only': False}}
 
@@ -253,10 +275,15 @@ class MissiontSerializer(serializers.ModelSerializer):
     def get_etape(self, obj):
         current_step = obj.current_step
         id_processus = obj.type_processus
-        typestepid = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=current_step).values('type_steps')
+        typestepid1 = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=int(current_step)+1).exists()
+        if typestepid1:
+           typestepid = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=int(current_step)+1).values('type_steps')
+        else:
+            typestepid = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=current_step).values('type_steps') 
         print("llllllllllllllllllllllllllmmmmmmmmmmmmmm")
         print(current_step)
         nom_etape = Typesteps.objects.filter(id_typesteps=int(typestepid[0]['type_steps'])).values('nom_typesteps')
+        val=nom_etape[0]['nom_typesteps']
         return nom_etape[0]['nom_typesteps']
         
     def get_full_name_chef_delegation(self, obj):
