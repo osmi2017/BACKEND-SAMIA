@@ -539,6 +539,8 @@ class BaremeSerializer(serializers.ModelSerializer):
         Regim = Regime.objects.filter(id_regime =int(Barem[0]['id_regime_id'])).values('nom_regime')
         bar={}    
         if Barem:
+            print('kakakakooooo')
+            print(Barem[0]['id_regime_id'])
             nom_Process= str(Process[0]['nom_processus'])
             nom_Regim= str(Regim[0]['nom_regime'])
             bar['Processus'] =nom_Process

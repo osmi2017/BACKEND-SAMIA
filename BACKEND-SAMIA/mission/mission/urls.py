@@ -31,6 +31,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-auth/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    path('api-token-auth/', views.CustomAuthToken.as_view()),
     path('mes-missionlist/<int:id>/', views.MesMissionList.as_view()),
     path('mes-missionlist/', views.MesMissionList.as_view()),
     path('mes-missionlist/traitement/<int:id>/', views.MesMissionTraitement.as_view()),
@@ -103,7 +104,7 @@ urlpatterns = [
     path('aufficeauth/', views.Officeauth.as_view()),
     
     path('authentification', views.StepprocessDetail.as_view()),
-    path('api-token-auth/', views.CustomAuthToken.as_view()),
+    
     path('signin_office/', views.sign_in, name='signin'),
     path('test_auth/', views.test_auth, name='test_auth'),
 

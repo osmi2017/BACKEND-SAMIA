@@ -267,7 +267,8 @@ class CustomAuthToken(ObtainAuthToken):
 
             })
         except:
-            return JsonResponse({'error':'Login ou mot de passe incorrecte'})
+            ##return JsonResponse({'error':'Login ou mot de passe incorrecte'})
+            return Response("Login ou mot de passe incorrecte", status=status.HTTP_401_UNAUTHORIZED)
 
 class Officeauth(APIView):
     def get(self,request):
@@ -314,7 +315,8 @@ class MesMissionList(APIView):
         #         name = mission.pop("id_mission")
         #         modified_response[name] = mission
         # return Response(modified_response)
-
+    
+    #Création de mission
     def post(self, request, format=None):
         print('kokokokoko')
         print(request.data)
@@ -372,7 +374,7 @@ class MesMissionList(APIView):
             data1['relance_cible'] = str(Group.objects.get(id=cible_group[0]['cible_id']))
         except Exception as e:
             print(e)
-            return Response(e, status=status.HTTP_400_BAD_REQUEST)
+            return Response("Le processus choisis n'a aucune étape. Contactez l'administrateur" , status=status.HTTP_400_BAD_REQUEST)
         try:
             users_in_group1 = Group.objects.get(id=int(cible_group[0]['cible_id'])).user_set.all()
             for user in users_in_group1:
@@ -508,7 +510,11 @@ class MesMissionList(APIView):
             try:
                 for user_id in user_list:
                     usermail= User.objects.filter(id=user_id).values('email')
+                    print('usermail')
+                    print(usermail)
                     a_email_list.append(usermail[0]['email'])
+                print('a_email_list')
+                print(a_email_list)
                 group_mail = Stepprocess.objects.filter(id_process_id= int(data1['type_processus'])).values('cible_id')
                 for group in group_mail:
                     #print(group['cible_id'])
@@ -556,6 +562,7 @@ class MesMissionList(APIView):
                     
             else:
                     return Response(serializer3.errors, status=status.HTTP_400_BAD_REQUEST)
+            #Envoie de mail de création de mission
             request_finished.connect(send_mail_mission)
             print('s<eet')
             Config_rappor= Config_rapport.objects.filter(id_process_id=int(data1['type_processus'])).values('expression','acteur')
@@ -578,7 +585,7 @@ class MesMissionList(APIView):
 
             return Response("Mission créée avec succès", status=status.HTTP_201_CREATED)
             
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response("Une erreur sur la configuration du processus est survenue veuillez contacter l'administrateur", status=status.HTTP_400_BAD_REQUEST)
 
     
 class MesMissionTraitement(APIView):
@@ -764,6 +771,7 @@ class BankDetail(generics.RetrieveUpdateDestroyAPIView):
 class employeList(generics.ListCreateAPIView):
      queryset = Employe.objects.all()
      serializer_class = EmployeSerializer
+     paginator = None
 
      def post(self, request):
          print('okkkiiiijjjjj')
@@ -1069,7 +1077,7 @@ class Validations(APIView):
             message = 'Validation de la mission numero '+mission[0]['numero_mission']+' par le '+ currentsible
         except Exception as e:
             print(e)
-            return Response(e, status=status.HTTP_400_BAD_REQUEST)
+            return Response("La validation a échoué, vous n'avez pas les droits ou n'appartenez pas au groupe habilité à éffectué cette validation. Veuillez contacter l'administrateur pour de détails", status=status.HTTP_400_BAD_REQUEST)
                         
         try:    
             if mission[0]['avion']=='False' and nextnomsteps.nom_typesteps== 'Billet':
@@ -1159,7 +1167,7 @@ class Validations(APIView):
                         return Response(serializer3.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
-            return Response(e, status=status.HTTP_400_BAD_REQUEST)
+            return Response("Un problème est survenu lors de la validation veuillez contacter l'administrateur.", status=status.HTTP_400_BAD_REQUEST)
               
             
             return JsonResponse("Vous n'êtes pas authorisé à faire cette action!!",status=status.HTTP_403_FORBIDDEN,content_type="application/json", safe=False)

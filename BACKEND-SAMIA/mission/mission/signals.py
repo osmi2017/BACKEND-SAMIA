@@ -93,7 +93,7 @@ def send_mail_mission(sender,**kwargs):
                 obj.save()
                 print("sento")
         except Exception as e:
-            print('kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk')
+            print('Email not sent')
             print(e)
             trace_back = traceback.format_exc()
             message = str(e)+ " " + str(trace_back)
