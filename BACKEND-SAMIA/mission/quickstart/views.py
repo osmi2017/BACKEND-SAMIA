@@ -85,7 +85,10 @@ def is_config_blocage(envo):
     envoye= Envoye.objects.filter(id_envoye=envo).values('id_mission','id_employe')
     mission=Mission.objects.filter(id_mission=int(envoye[0]['id_mission'])).values('type_processus','current_step')
     config_blocage=Config_blocage.objects.filter(id_process_id=int(mission[0]['type_processus'])).values('step_debut','step_fin')
+    print("aajjj")
+    
     if int(mission[0]['current_step'])>int(config_blocage[0]['step_debut']):
+        
         obj = Employe.objects.get(id_employe=int(envoye[0]['id_employe']))
                 
         obj.verrou_employe = True
@@ -93,16 +96,25 @@ def is_config_blocage(envo):
         obj.save()
     bloque= Bloque.objects.filter(id_envoye_id=envo).exclude(step_process=10).exists()
     if not bloque:
-       step_process= Stepprocess.objects.filter(id_stepprocess=config_blocage[0]['step_fin']).values('type_steps')
+       print(("ok something"))
+       step_process= Stepprocess.objects.filter(id_stepprocess=int(config_blocage[0]['step_fin'])).values('type_steps')
+       print(config_blocage[0]['step_fin'])
        data={}
        data['id_envoye_id']=envo
+       print("ici")
+       print(step_process)
        data['step_process']=step_process[0]['type_steps']
+       print(config_blocage[0]['step_fin'])
+       print( data['id_envoye_id'])
        serializer = BloqueSerializer(data=data)
         
        if serializer.is_valid():
-            
+            print("WAAAOOO")
             serializer.save()
-
+       else:
+           print("scoobydo")
+    else:
+        print("MAO")
 def mission_to_envoye(mission):
     envoye= Envoye.objects.filter(id_mission=int(mission)).values()
     for env in envoye:
@@ -1158,8 +1170,8 @@ class Validations(APIView):
                 if serializer3.is_valid():
                         print(serializer3)
                         serializer3.save()
-                        request_finished.connect(send_mail_mission)
-                        mission_to_envoye(int(idmission))
+                        #srequest_finished.connect(send_mail_mission)
+                        #mission_to_envoye(int(idmission))
                         return Response("Validez avec succès",status=status.HTTP_201_CREATED)
                         
                 else:
@@ -1170,7 +1182,7 @@ class Validations(APIView):
             return Response("Un problème est survenu lors de la validation veuillez contacter l'administrateur.", status=status.HTTP_400_BAD_REQUEST)
               
             
-            return JsonResponse("Vous n'êtes pas authorisé à faire cette action!!",status=status.HTTP_403_FORBIDDEN,content_type="application/json", safe=False)
+            #return JsonResponse("Vous n'êtes pas authorisé à faire cette action!!",status=status.HTTP_403_FORBIDDEN,content_type="application/json", safe=False)
 
 class Billets(APIView):
     
@@ -1342,7 +1354,7 @@ class forfait(APIView):
                     print(serializer3)
                     serializer3.save()
                     request_finished.connect(send_mail_mission)
-                    mission_to_envoye(int(idmission))
+                    #mission_to_envoye(int(idmission))
                     return Response(status=status.HTTP_201_CREATED)
                     
             else:
@@ -1365,7 +1377,7 @@ class NumeroDetail(APIView):
         stepprocess= Stepprocess.objects.filter(order_steps=int(currentstep)+2,id_process_id=int(type_processus)).values('type_steps_id')
         typesteps=  Typesteps.objects.filter(id_typesteps=stepprocess[0]['type_steps_id']).values('nom_typesteps')
         query3 = query1.update(numero_mission=request.data['id_mission'],current_step=int(currentstep)+1,relance_cible=str(typesteps[0]['nom_typesteps'])) 
-        mission_to_envoye(int(request.data['id_mission']))
+        #mission_to_envoye(int(request.data['id_mission']))
 
         if mission_billet_no(request.data['id_mission']):
             query4 = Mission.objects.filter(id_mission=request.data['id_mission'])
@@ -1413,8 +1425,11 @@ class paiement(APIView):
                         cheq=Cheque.objects.latest('id_cheque')
                         
                         data['id_cheque_id']= cheq.id_cheque
+                else:
+                    print("zzzz")
+                    return Response("1", status=status.HTTP_400_BAD_REQUEST)
             serializer = PaiementSerializer(data=data)
-            #print(serializer)
+            
             if serializer.is_valid():
                 
                 serializer.save()
@@ -1423,13 +1438,14 @@ class paiement(APIView):
                 is_config_blocage(int(request.data['id_envoye']))
                 return Response(serializer2.data, status=status.HTTP_201_CREATED)
             else:
-                print(serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                print("eeeee")
+                return Response("aa", status=status.HTTP_400_BAD_REQUEST)
 
                 
         except Exception as e:
-                print(e)
-                return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+                print("bbbb")
+                print(request.data['id_envoye'])
+                return Response(str("ii"), status=status.HTTP_400_BAD_REQUEST)
 
         
 
@@ -1488,7 +1504,7 @@ class justificationList(generics.ListCreateAPIView):
             
 
 
-     def post(self, request,format=None):
+     def post(self, request,envoye,format=None):
             print(request.data)
             data={}
             data['id_envoye_id']= int(request.data['id_envoye_id'])
@@ -1502,7 +1518,9 @@ class justificationList(generics.ListCreateAPIView):
             if serializers.is_valid():
             
                 serializers.save()
-                return Response(serializers.data, status=status.HTTP_201_CREATED) 
+                justificatifs=Justifs.objects.filter(id_envoye_id=data['id_envoye_id'])
+                serializer = JustifsSerializer(justificatifs,context={'request': request}, many=True)   
+                return Response(serializer.data, status=status.HTTP_201_CREATED) 
             print(serializers.errors)
             return Response( serializers.errors, status=status.HTTP_400_BAD_REQUEST )
 
