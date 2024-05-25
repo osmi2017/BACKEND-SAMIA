@@ -23,14 +23,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, '')
 
 
 STATICFILES_DIRS = (os.path.join(BASE_DIR, ''),)
-
+env = environ.Env(
+    # définir les valeurs par défaut ici si nécessaire
+    DEBUG=(bool, False)
+)
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4i)*!9*l5sa$&-g9p#@ds2^(3lxr^^is$aa9ymb4*i#$$1sgl!'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -111,9 +115,9 @@ WSGI_APPLICATION = 'mission.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'samia',
-        'USER': 'osmi',
-        'PASSWORD': '##@osmi@2020',
+        'NAME': env('DATABASE_NAME'),
+        'USER': env('DATABASE_USER'),
+        'PASSWORD': env('DATABASE_PASSWORD'),
         'HOST': '',
         'PORT': '',
     }
@@ -193,8 +197,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # values you got from step 2 from your Mirosoft app
-MICROSOFT_AUTH_CLIENT_ID = '12cfcb53-3acf-4494-9c8e-0a670844a819'
-MICROSOFT_AUTH_CLIENT_SECRET = 'hk98Q~ekEb-rNvVVHcSpbpSdTpIuqSkmGYrVwamv'
+MICROSOFT_AUTH_CLIENT_ID = ''
+MICROSOFT_AUTH_CLIENT_SECRET = ''
 # Tenant ID is also needed for single tenant applications
 # MICROSOFT_AUTH_TENANT_ID = 'your-tenant-id-from-apps.dev.microsoft.com'
 
@@ -207,8 +211,8 @@ MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
 #MICROSOFT_AUTH_LOGIN_TYPE = 'xbl'  # Xbox Live authentication
 
 MICROSOFT = {
-    "app_id": "12cfcb53-3acf-4494-9c8e-0a670844a819",
-    "app_secret": "hk98Q~ekEb-rNvVVHcSpbpSdTpIuqSkmGYrVwamv",
+    "app_id": "",
+    "app_secret": "",
     "redirect": "http://localhost:8000/test_auth/",
     "scopes": ["user.read"],
     "authority": "https://login.microsoftonline.com/common",  # or using tenant "https://login.microsoftonline.com/{tenant}",
