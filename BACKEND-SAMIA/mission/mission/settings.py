@@ -197,25 +197,25 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # values you got from step 2 from your Mirosoft app
-MICROSOFT_AUTH_CLIENT_ID = ''
-MICROSOFT_AUTH_CLIENT_SECRET = ''
+##MICROSOFT_AUTH_CLIENT_ID = ''
+##MICROSOFT_AUTH_CLIENT_SECRET = ''
 # Tenant ID is also needed for single tenant applications
 # MICROSOFT_AUTH_TENANT_ID = 'your-tenant-id-from-apps.dev.microsoft.com'
 
 # pick one MICROSOFT_AUTH_LOGIN_TYPE value
 # Microsoft authentication
 # include Microsoft Accounts, Office 365 Enterpirse and Azure AD accounts
-MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
+##MICROSOFT_AUTH_LOGIN_TYPE = 'ma'
 
 # Xbox Live authentication
 #MICROSOFT_AUTH_LOGIN_TYPE = 'xbl'  # Xbox Live authentication
 
-MICROSOFT = {
-    "app_id": "",
-    "app_secret": "",
-    "redirect": "http://localhost:8000/test_auth/",
-    "scopes": ["user.read"],
-    "authority": "https://login.microsoftonline.com/common",  # or using tenant "https://login.microsoftonline.com/{tenant}",
-    "valid_email_domains": ["<list_of_valid_domains>"],
-    "logout_uri": "http://localhost:8000/admin/logout"
-}
+M#ICROSOFT = {
+#    "app_id": "",
+#    "app_secret": "",
+#    "redirect": "http://localhost:8000/test_auth/",
+#    "scopes": ["user.read"],
+#    "authority": "https://login.microsoftonline.com/common",  # or using tenant "https://login.microsoftonline.com/{tenant}",
+#    "valid_email_domains": ["<list_of_valid_domains>"],
+#    "logout_uri": "http://localhost:8000/admin/logout"
+#}
