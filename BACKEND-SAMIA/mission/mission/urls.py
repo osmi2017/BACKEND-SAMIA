@@ -45,6 +45,7 @@ urlpatterns = [
     path('Stepprocess/', views.StepprocessList.as_view()),
     path('Stepprocess/<int:pk>/', views.StepprocessDetail.as_view()),
     path('userlist/', views.userList.as_view()),
+    path('user-metadata/', views.UserMetadataView.as_view()),
     path('userdetail/<int:pk>/', views.userDetail.as_view()),
     path('Employelist/', views.employeList.as_view()),
     path('Employedetail/', views.employeDetail.as_view()),
@@ -110,6 +111,7 @@ urlpatterns = [
 
     #path('signout', views.home, name='signout'),
     path('microsoftauthentification/', include('microsoft_auth.urls', namespace='microsoft')),
+    path('api-login/', views.UserLoginView.as_view(), name='user-login'),
     
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

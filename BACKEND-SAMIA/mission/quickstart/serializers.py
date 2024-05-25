@@ -1,4 +1,3 @@
-from turtle import circle
 from django.contrib.auth.models import User, Group,Permission
 from rest_framework import serializers
 from quickstart.models import Typesteps,Mission,Envoye,Regime,Config_blocage,Config_rapport,Rapport,Bloque,Bank,Cheque,Justifs,Paiement,Actions,Service, Employe,Montant_zone,Bareme,Bareme_detail,Processus,Stepprocess,Pole,Entite,TypeProjet,Projet, Country, Worldcities, Categorie, Bareme_envoye,Notifications,Zone, Bareme_envoye
@@ -21,7 +20,11 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = ['pk','url', 'name']
 
 
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
+    
 class EnvoyeSerializer(serializers.ModelSerializer):
     hebergement = serializers.SerializerMethodField()
     perdiem = serializers.SerializerMethodField()
@@ -225,153 +228,17 @@ class RegimeSerializer(serializers.HyperlinkedModelSerializer):
 
 
 
-class MissiontSerializer(serializers.ModelSerializer):
-    envoye = EnvoyeSerializer(many=True, read_only=True)
-    destination = serializers.SerializerMethodField()
-    lieu_mission= serializers.SerializerMethodField()
-    chef_delegation = serializers.SerializerMethodField()
-    full_name_chef_delegation = serializers.SerializerMethodField()
-    entite = serializers.SerializerMethodField()
-    etape = serializers.SerializerMethodField()
-    cout= serializers.SerializerMethodField()
-    cout= serializers.SerializerMethodField()
-
-    
+class MissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mission
-        fields = ['id_mission', 'date_demande', 'objet_mission','chef_delegation','full_name_chef_delegation', 'depart_mission', 'retour_mission', 'lieu_mission','statut_mission','numero_mission','destination_mission','destination','contexte_mission','objectifs_mission','frais_extra','chg_extra','cout','current_step','etape','relance_cible','type_processus','regime','avion','id_demandeur','envoye','entite']
-    
-    def get_cout(self, obj):
-        bareme_envoye = Bareme_envoye.objects.filter(id_mission_id  = obj.id_mission).values('hebergement','perdiem')
-        hebergement =0
-        perdiem=0
-        for x in range(0,len(bareme_envoye)):
-            hebergement= hebergement+bareme_envoye[x]['hebergement']
-            perdiem= perdiem+bareme_envoye[x]['perdiem']
-        extra = obj.frais_extra
-        extra = extra.replace("'", "")
-        return hebergement+perdiem+int(extra)
-
-    def get_entite(self, obj):
-        id_processus= obj.type_processus
-        print(id_processus.id_process)
-        print(id_processus)
-        process= Processus.objects.filter(id_process= int(id_processus.id_process)).values('type_process','id_relatated')
-        type_process= process[0]['type_process']
-        if type_process == 'NO':
-           return process[0]['id_relatated']
-        elif type_process == 'PR':
-            id_projet = process[0]['type_process']
-            projet = Projet.objects.filter(id_projet=int(id_projet)).values('id_entite_id')
-            return projet[0]['id_entite_id']
-        else:
-            var ='processus inconnu'
-            return var
-
-    def get_lieu_mission(self, obj):
-        destination = obj.destination_mission
-        return ast.literal_eval(destination)
-
-    def get_etape(self, obj):
-        current_step = obj.current_step
-        id_processus = obj.type_processus
-        typestepid1 = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=int(current_step)+1).exists()
-        if typestepid1:
-           typestepid = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=int(current_step)+1).values('type_steps')
-        else:
-            typestepid = Stepprocess.objects.filter(id_process_id = int(id_processus.id_process)).filter(order_steps=current_step).values('type_steps') 
-        print("llllllllllllllllllllllllllmmmmmmmmmmmmmm")
-        print(current_step)
-        nom_etape = Typesteps.objects.filter(id_typesteps=int(typestepid[0]['type_steps'])).values('nom_typesteps')
-        val=nom_etape[0]['nom_typesteps']
-        return nom_etape[0]['nom_typesteps']
-        
-    def get_full_name_chef_delegation(self, obj):
-        envoye= Envoye.objects.filter(id_mission_id=obj.id_mission).filter(role='chef de delegation').values('nom_employe','prenom_employe')
-        
-        if envoye:
-            nom_employe= envoye[0]['nom_employe']
-            prenoms_employe = envoye[0]['prenom_employe']
-
-        
-
-            return '{} {}'.format(nom_employe, prenoms_employe) 
-        return None 
-
-    def get_destination(self, obj):
-        mission = Mission.objects.filter(id_mission = obj.id_mission).values('destination_mission')
-        dest= mission[0]['destination_mission']
-        destination = ast.literal_eval(dest)
-        name_dest=[]
-        for dest in destination:
-            name=Worldcities.objects.filter(id=dest).values('city')
-            name_dest.append(name[0]['city'])
-        return name_dest
-
-    def get_chef_delegation(self, obj):
-        envoye= Envoye.objects.filter(id_mission_id=obj.id_mission).filter(role='chef de delegation').values('id_employe_id')
-        if envoye:
-            id_envoye= envoye[0]['id_employe_id']
-            return id_envoye
-        return None
+        fields = '__all__'
 
 class UserSerializer(serializers.ModelSerializer):
-    mission = MissiontSerializer(many=True, read_only=True)
-    rights = serializers.SerializerMethodField()
-    full_name_user=serializers.SerializerMethodField()
-    url_photo = serializers.SerializerMethodField()
-    mission_rapport_validader = serializers.SerializerMethodField()
-    def get_mission_rapport_validader(self, obj):
-        
-        lsgroup=[]
-        lsprocess=[]
-        lsmission=[]
-        group= obj.groups.all().values()
-        for x in range(0,len(group)):
-            lsgroup.append(group[x]['id'])
-        config_rapport= Config_rapport.objects.filter(Validateur_id__in=lsgroup).values()
-        for x in range(0,len(config_rapport)):
-            lsprocess.append(config_rapport[x]['id_process_id_id'])
-        mission= Mission.objects.filter(type_processus_id__in=lsprocess).values()
-        for x in range(0,len(mission)):
-            lsmission.append(mission[x]['id_mission'])
+    
 
-        return lsmission
-    def get_url_photo(self, obj):
-        print("5555555555555555")
-        print(type(obj.id))
-        photo = Employe.objects.filter(nom_employe = obj.first_name, prenoms_employe=obj.last_name).values('photo')
-        
-        if photo:
-            image= photo[0]['photo']
-            image= '/static/'+image
-        else:
-            image= '/static/photo/user.png'
-        return image
     class Meta:
         model = User
-        fields = ['id', 'username', 'email','full_name_user','first_name','last_name','is_superuser', 'groups','mission','rights','mission_rapport_validader','url_photo']
-
-    def get_full_name_user(self, obj):
-        #envoye= Envoye.objects.filter(id_mission_id=obj.id_mission).filter(role='chef de delegation').values('nom_employe','prenom_employe')
-        
-        return '{} {}'.format(obj.first_name, obj.last_name)
-            
-
-    def get_rights(self, obj):
-        user= User.objects.get(id=obj.id)
-        lst_right=[]
-        perm=''
-        if user.is_superuser:
-            perm= Permission.objects.all().values('codename')
-            
-        else:
-            perm = user.user_permissions.all().values('codename') | Permission.objects.filter(group__user=user).values('codename')
-
-        for x in range(0,len(perm)):
-               lst_right.append(perm[x]['codename'])
-            
-        return lst_right
+        fields = '__all__'
 
 
 class TypestepsSerializer(serializers.ModelSerializer):
@@ -408,7 +275,7 @@ class EmployeSerializer(serializers.ModelSerializer):
         fields = ['id_employe', 'full_name','nom_employe','prenoms_employe','date_naiss_employe','email_employe','matricule_employe','tel_employe','fonction_employe','login_employe','password_employe','compte_actif','verrou_employe','id_createur','id_user','date_creation','id_categorie','id_entite','id_service','photo','url_photo']
 
 class User1Serializer(serializers.ModelSerializer):
-    mission = MissiontSerializer(many=True, read_only=True)
+    mission = MissionSerializer(many=True, read_only=True)
     employe = EmployeSerializer(many=True, read_only=True)
     class Meta:
         model = User

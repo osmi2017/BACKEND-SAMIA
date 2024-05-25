@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterField(
             model_name='paiement',
-            name='chaque',
+            name='cheque',
             field=models.BooleanField(default=False),
         ),
     ]

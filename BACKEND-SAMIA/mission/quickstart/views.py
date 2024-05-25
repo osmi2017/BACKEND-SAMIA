@@ -7,7 +7,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from quickstart.models import Employe,Config_blocage,Rapport, Envoye,Regime,Bank,Justifs,Cheque,Mission,Employe,Config_rapport, Service,Stepprocess,Processus,Pole,Entite,TypeProjet,Projet,Country,Worldcities,Categorie, Bareme, Bareme_detail, Montant_zone,Notifications,Typesteps,Zone,Paiement,Bloque
 from rest_framework import viewsets
 from rest_framework import permissions
-from quickstart.serializers import UserSerializer,TypestepsSerializer,RapportSerializer,Config_blocageSerializer,Config_rapportSerializer,BloqueSerializer,JustifsSerializer,ChequeSerializer,PaiementSerializer,BankSerializer,ServiceSerializer,Montant_zoneSerializer,EnvoyeSerializer,BaremeSerializer,Bareme_detailSerializer, GroupSerializer,MissiontSerializer,RegimeSerializer,ProcessusSerializer,StepprocessSerializer,User1Serializer,EmployeSerializer,PoleSerializer,TypeProjetSerializer,EntiteSerializer,ProjetSerializer,CountrySerializer,WorldcitiesSerializer, CategorieSerializer, Bareme_envoyeSerializer, NotificationSerializer,ZoneSerializer
+from quickstart.serializers import UserSerializer,UserLoginSerializer, TypestepsSerializer,RapportSerializer,Config_blocageSerializer,Config_rapportSerializer,BloqueSerializer,JustifsSerializer,ChequeSerializer,PaiementSerializer,BankSerializer,ServiceSerializer,Montant_zoneSerializer,EnvoyeSerializer,BaremeSerializer,Bareme_detailSerializer, GroupSerializer,MissionSerializer,RegimeSerializer,ProcessusSerializer,StepprocessSerializer,User1Serializer,EmployeSerializer,PoleSerializer,TypeProjetSerializer,EntiteSerializer,ProjetSerializer,CountrySerializer,WorldcitiesSerializer, CategorieSerializer, Bareme_envoyeSerializer, NotificationSerializer,ZoneSerializer
 from django.http import HttpResponse, JsonResponse, FileResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser,MultiPartParser, FormParser,FileUploadParser
@@ -38,6 +38,9 @@ from quickstart.auth_helper import get_sign_in_flow, get_token_from_code, store_
 from django.contrib.auth.models import Permission
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
+from django.contrib.auth import authenticate
+from rest_framework.permissions import IsAdminUser
+from rest_framework.authentication import TokenAuthentication
 
 
 def test_auth(request):
@@ -80,6 +83,8 @@ def sign_in(request):
     print(e)
   # Redirect to the Azure sign-in page
   return HttpResponseRedirect(flow['auth_uri'])
+
+
 
 def is_config_blocage(envo):
     envoye= Envoye.objects.filter(id_envoye=envo).values('id_mission','id_employe')
@@ -258,6 +263,23 @@ def check_rapport_final(final):
 
    return rapport_return
 
+class UserLoginView(APIView):
+    def post(self, request, *args, **kwargs):
+        print(request.data)
+        serializer = UserLoginSerializer(data=request.data)
+        print(serializer)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+
+            user = authenticate(username=username, password=password)
+            if user:
+                token, created = Token.objects.get_or_create(user=user)
+                return Response({'token': token.key, 'user':serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'erreur': 'Loin ou mot de passe inconrect'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class CustomAuthToken(ObtainAuthToken):
 
     def post(self, request, *args, **kwargs):
@@ -320,7 +342,7 @@ class MesMissionList(APIView):
         envoye=Envoye.objects.filter(id_employe__in= employe).values('id_envoye')
         ##print(envoye)
         mission = Mission.objects.filter(envoye__id_envoye__in=envoye).distinct().order_by('-id_mission')
-        serializer = MissiontSerializer(mission,context={'request': request}, many=True)
+        serializer = MissionSerializer(mission,context={'request': request}, many=True)
         return Response(serializer.data)
         # if data:
         #     for mission in serializer.data:
@@ -410,7 +432,7 @@ class MesMissionList(APIView):
             print(e)
             return Response(e, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = MissiontSerializer(data=data1)
+        serializer = MissionSerializer(data=data1)
         
         if serializer.is_valid():
             strerror=''
@@ -625,7 +647,7 @@ class MesMissionTraitement(APIView):
             mission = Mission.objects.filter(id_demandeur_id=id).distinct().order_by('-id_mission') | Mission.objects.filter(type_processus_id__in=list_processs).distinct().order_by('-id_mission') 
         
         
-            serializer = MissiontSerializer(mission,context={'request': request}, many=True) 
+            serializer = MissionSerializer(mission,context={'request': request}, many=True) 
 
             return Response(serializer.data)
         except Mission.DoesNotExist:
@@ -648,12 +670,12 @@ class MesMissionDetail(APIView):
 
     def get(self, request, pk, format=None):
         mission = self.get_object(pk)
-        serializer = MissiontSerializer(mission)
+        serializer = MissionSerializer(mission)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
         mission = self.get_object(pk)
-        serializer = MissiontSerializer(mission, data=request.data)
+        serializer = MissionSerializer(mission, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -760,10 +782,31 @@ class StepprocessDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class =  StepprocessSerializer
 
 class userList(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     queryset = User.objects.all()
-    serializer_class =  UserSerializer
+    serializer_class = UserSerializer
+    
 
-   
+class UserMetadataView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # Define form fields data
+        fields = [
+            {"label": "Nom d'utilisateur", "type": "text", "name": "username", "value": "", "required": True},
+            {"label": "Nom ", "type": "text", "name": "first_name", "value": "", "required": True},
+            {"label": "Nom ", "type": "text", "name": "last_name", "value": "", "required": True},
+            {"label": "Email", "type": "email", "name": "email", "value": "", "required": True},
+            {"label": "Mot de passe", "type": "password", "name": "password", "value": "", "required": True},
+            {"label": "Administrateur", "type": "checkbox", "name": "is_superuser", "value": True},
+
+            # Add more fields as needed
+        ]
+        
+        # Return fields data in the response
+        return Response({"fields": fields}) 
 
 class userDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()

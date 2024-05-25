@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='paiement',
             name='id_envoye_id',
-            field=models.ForeignKey(default=django.utils.timezone.now, on_delete=django.db.models.deletion.CASCADE, to='quickstart.envoye'),
+            field=models.ForeignKey(default=100, on_delete=django.db.models.deletion.CASCADE, to='quickstart.envoye'),
             preserve_default=False,
         ),
     ]

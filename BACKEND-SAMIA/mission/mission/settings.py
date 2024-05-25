@@ -110,12 +110,12 @@ WSGI_APPLICATION = 'mission.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'samia',
-        'USER': 'root',
-        'PASSWORD': '',
+        'USER': 'osmi',
+        'PASSWORD': '##@osmi@2020',
         'HOST': '',
-        'PORT': '3306',
+        'PORT': '',
     }
     
 }
@@ -168,7 +168,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
+    'PAGE_SIZE': 500000,
    
      'DEFAULT_AUTHENTICATION_CLASSES': (
                'rest_framework.authentication.TokenAuthentication',

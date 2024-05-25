@@ -15,13 +15,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='paiement',
             name='cheque',
-            field=models.BooleanField(default=django.utils.timezone.now),
+            field=models.BooleanField(default=False),  # Set the default to True or False as needed
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='paiement',
             name='id_envoye_id',
-            field=models.ForeignKey(default=django.utils.timezone.now, on_delete=django.db.models.deletion.CASCADE, to='quickstart.envoye'),
+            field=models.ForeignKey(default=None, on_delete=django.db.models.deletion.CASCADE, to='quickstart.envoye'),  # Set an appropriate default value or None
             preserve_default=False,
         ),
     ]
