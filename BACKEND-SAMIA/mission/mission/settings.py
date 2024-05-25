@@ -210,7 +210,7 @@ AUTHENTICATION_BACKENDS = [
 # Xbox Live authentication
 #MICROSOFT_AUTH_LOGIN_TYPE = 'xbl'  # Xbox Live authentication
 
-M#ICROSOFT = {
+#MICROSOFT = {
 #    "app_id": "",
 #    "app_secret": "",
 #    "redirect": "http://localhost:8000/test_auth/",
