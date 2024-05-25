@@ -1,5 +1,5 @@
-app_id: "12cfcb53-3acf-4494-9c8e-0a670844a819"
-app_secret: "hk98Q~ekEb-rNvVVHcSpbpSdTpIuqSkmGYrVwamv"
+app_id: ""
+app_secret: ""
 redirect: "http://localhost:8000/test_auth/"
 scopes:
   - user.read
